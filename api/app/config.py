@@ -1,0 +1,30 @@
+from pydantic_settings import BaseSettings, SettingsConfigDict
+from functools import lru_cache
+
+
+class Settings(BaseSettings):
+    """Application configuration loaded from environment variables."""
+    
+    app_name: str = "Demand Navigator API"
+    app_version: str = "0.1.0"
+    debug: bool = False
+    
+    api_host: str = "0.0.0.0"
+    api_port: int = 8000
+    
+    cors_origins: list[str] = ["http://localhost:8080", "http://localhost:5173"]
+    
+    database_url: str = "postgresql://postgres:postgres@localhost:5432/demand_navigator"
+    
+    model_config = SettingsConfigDict(
+        env_file=".env",
+        env_file_encoding="utf-8",
+        case_sensitive=False,
+        extra="ignore"
+    )
+
+
+@lru_cache
+def get_settings() -> Settings:
+    """Cached settings instance."""
+    return Settings()

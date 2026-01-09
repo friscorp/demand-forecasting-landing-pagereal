@@ -26,3 +26,14 @@ dist-ssr
 
 # env
 .env
+
+# Python
+api/.env
+api/__pycache__/
+api/**/__pycache__/
+api/.pytest_cache/
+api/**/.pytest_cache/
+api/*.pyc
+api/**/*.pyc
+api/.venv/
+api/venv/

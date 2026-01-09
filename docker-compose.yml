@@ -1,0 +1,61 @@
+version: '3.9'
+
+services:
+  # PostgreSQL Database
+  db:
+    image: postgres:16-alpine
+    container_name: demand_navigator_db
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: demand_navigator
+      # Performance tuning for local development
+      POSTGRES_INITDB_ARGS: "-E UTF8 --locale=en_US.UTF-8"
+    ports:
+      - "5432:5432"
+    volumes:
+      # Persist data between restarts
+      - dn_pg_data:/var/lib/postgresql/data
+      # Optional: init scripts
+      - ./api/scripts/init-db.sql:/docker-entrypoint-initdb.d/init-db.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+    networks:
+      - demand_navigator_network
+
+  # Optional: pgAdmin for database management
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    container_name: demand_navigator_pgadmin
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@demandnav.local
+      PGADMIN_DEFAULT_PASSWORD: admin
+      PGADMIN_CONFIG_SERVER_MODE: 'False'
+      PGADMIN_CONFIG_MASTER_PASSWORD_REQUIRED: 'False'
+    ports:
+      - "5050:80"
+    volumes:
+      - dn_pgadmin_data:/var/lib/pgadmin
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: unless-stopped
+    networks:
+      - demand_navigator_network
+    profiles:
+      - tools  # Only start with --profile tools
+
+volumes:
+  dn_pg_data:
+    name: demand_navigator_postgres_data
+  dn_pgadmin_data:
+    name: demand_navigator_pgadmin_data
+
+networks:
+  demand_navigator_network:
+    name: demand_navigator_network
+    driver: bridge
