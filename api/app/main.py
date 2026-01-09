@@ -1,10 +1,12 @@
 from contextlib import asynccontextmanager
-from fastapi import FastAPI
+from fastapi import FastAPI, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
+from sqlalchemy import text
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from api.app.config import get_settings
-from api.app.db import init_db, close_db
+from api.app.db import init_db, close_db, get_db
 
 settings = get_settings()
 
@@ -44,6 +46,25 @@ async def health():
         "service": settings.app_name,
         "version": settings.app_version
     }
+
+
+@app.get("/health/db")
+async def health_db(db: AsyncSession = Depends(get_db)):
+    """Database health check endpoint."""
+    try:
+        result = await db.execute(text("SELECT 1 as health"))
+        row = result.first()
+        return {
+            "ok": True,
+            "database": "connected",
+            "test_query": row[0] if row else None
+        }
+    except Exception as e:
+        return {
+            "ok": False,
+            "database": "error",
+            "error": str(e)
+        }
 
 
 @app.get("/")

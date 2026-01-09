@@ -2,313 +2,293 @@
 
 FastAPI backend service for the Demand Navigator application.
 
-## Table of Contents
+## What is this folder?
 
-- [Prerequisites](#prerequisites)
-- [Initial Setup](#initial-setup)
-- [Running the Server](#running-the-server)
-- [API Documentation](#api-documentation)
-- [File Structure](#file-structure)
-- [Configuration](#configuration)
-- [Testing Endpoints](#testing-endpoints)
-- [Troubleshooting](#troubleshooting)
+The `api/` directory contains the Python backend API built with FastAPI. It provides:
 
-## Prerequisites
-
-- **Python 3.10+** (check with `python3 --version`)
-- **Node.js 18+** (for frontend development)
-- **pip** (Python package manager)
-
-## Initial Setup
-
-### 1. Create Virtual Environment
-
-From the `api/` directory:
-
-```bash
-cd api
-python3 -m venv .venv
-```
-
-### 2. Activate Virtual Environment
-
-**macOS/Linux:**
-```bash
-source .venv/bin/activate
-```
-
-**Windows:**
-```bash
-.venv\Scripts\activate
-```
-
-You should see `(.venv)` in your terminal prompt when activated.
-
-### 3. Install Dependencies
-
-```bash
-pip install -e .
-```
-
-This installs all required packages including:
-- FastAPI (web framework)
-- Uvicorn (ASGI server)
-- Pydantic (data validation)
-- Pydantic Settings (configuration management)
-- Python-dotenv (environment variables)
-
-### 4. Configure Environment Variables
-
-```bash
-cp .env.example .env
-```
-
-Edit `.env` if needed to customize settings like port, CORS origins, etc.
-
-## Running the Server
-
-### From Repository Root
-
-```bash
-api/.venv/bin/uvicorn api.app.main:app --reload --port 8000 --host 0.0.0.0
-```
-
-### From api/ Directory
-
-```bash
-cd api
-.venv/bin/uvicorn api.app.main:app --reload --port 8000 --host 0.0.0.0
-```
-
-### Expected Output
-
-```
-INFO:     Will watch for changes in these directories: ['/path/to/demand-navigator']
-INFO:     Uvicorn running on http://0.0.0.0:8000 (Press CTRL+C to quit)
-INFO:     Started reloader process [xxxxx] using WatchFiles
-INFO:     Started server process [xxxxx]
-INFO:     Waiting for application startup.
-🚀 Starting Demand Navigator API v0.1.0
-INFO:     Application startup complete.
-```
-
-The server will be accessible at:
-- **Local:** http://localhost:8000
-- **Network:** http://0.0.0.0:8000
-
-## API Documentation
-
-When running with `DEBUG=true` in `.env`:
-
-- **Swagger UI:** http://localhost:8000/api/docs
-- **ReDoc:** http://localhost:8000/api/redoc
-
-These provide interactive API documentation and testing interfaces.
+- RESTful API endpoints for the frontend
+- Database connection management (PostgreSQL)
+- Business logic and data processing
+- Authentication and authorization (future)
 
 ## File Structure
 
 ```
 api/
 ├── app/
-│   ├── __init__.py          # Package initializer (empty)
+│   ├── __init__.py          # Package initializer
 │   ├── main.py              # FastAPI application entrypoint
-│   ├── config.py            # Configuration and environment settings
-│   └── db.py                # Database connection stub (EPIC 2)
+│   ├── config.py            # Configuration management
+│   └── db.py                # Database connection (SQLAlchemy async)
+├── scripts/
+│   ├── init-db.sql          # Database initialization script
+│   └── wait-for-db.sh       # Database readiness helper
+├── .venv/                   # Python virtual environment (gitignored)
 ├── .env                     # Environment variables (gitignored)
 ├── .env.example             # Environment template
-├── pyproject.toml           # Python project metadata and dependencies
+├── pyproject.toml           # Python dependencies
+├── start.sh                 # API startup script
 └── README.md                # This file
 ```
 
-### File Descriptions
+### Key Files
 
-#### `app/main.py`
-The FastAPI application entrypoint. Contains:
-- **Application lifecycle management** (`lifespan` context manager)
-- **CORS middleware** configuration for cross-origin requests
-- **Route definitions** (`/health`, `/` root endpoint)
-- **Global exception handler** for error management
+**`app/main.py`**
+- FastAPI application setup
+- API routes and endpoints
+- CORS middleware configuration
+- Lifecycle management (startup/shutdown)
 
-Key features:
-- Automatic startup/shutdown hooks
-- CORS enabled for frontend origins (localhost:8080, localhost:5173)
-- Interactive API docs (when DEBUG=true)
+**`app/config.py`**
+- Environment variable management
+- Application settings
+- Database connection strings
 
-#### `app/config.py`
-Configuration management using Pydantic Settings. Handles:
-- **Environment variable loading** from `.env` file
-- **Type validation** for all configuration values
-- **Default values** for all settings
-- **Cached settings instance** via `@lru_cache` decorator
+**`app/db.py`**
+- Async database connection pool
+- SQLAlchemy engine setup
+- Database session management
 
-Settings include:
-- Application metadata (name, version, debug mode)
-- Server configuration (host, port)
-- CORS origins
-- Database URL (for future use)
+**`pyproject.toml`**
+- Python dependencies:
+  - FastAPI - Web framework
+  - Uvicorn - ASGI server
+  - SQLAlchemy - ORM
+  - asyncpg - PostgreSQL driver
+  - Pydantic - Data validation
 
-#### `app/db.py`
-Database connection stub. Currently contains placeholder functions:
-- `init_db()` - Will initialize database connections in EPIC 2
-- `close_db()` - Will close database connections in EPIC 2
+## How to Run
 
-This file is prepared for future database integration but doesn't perform any operations yet.
+### Using npm scripts (from repo root)
 
-#### `pyproject.toml`
-Python project configuration using modern `pyproject.toml` format:
-- Project metadata (name, version, description)
-- Python version requirement (>=3.10)
-- Dependencies list
-- Build system configuration
-- Pytest configuration
+```bash
+# Start database first
+npm run db:start
 
-#### `.env` / `.env.example`
-Environment configuration files:
-- `.env.example` - Template with all available settings
-- `.env` - Active configuration (gitignored, created from example)
+# Start API only
+npm run dev:api
 
-## Configuration
+# Start both frontend and API
+npm run dev:full
+```
 
-### Environment Variables
+### Using the startup script
 
-Edit `.env` to customize:
+```bash
+cd api
+./start.sh
+```
+
+This script automatically:
+- Creates virtual environment if missing
+- Installs dependencies if needed
+- Copies .env if missing
+- Starts database if not running
+- Starts the API server
+
+### Manual setup
+
+```bash
+cd api
+
+# Create virtual environment
+python3 -m venv .venv
+source .venv/bin/activate
+
+# Install dependencies
+pip install -e .
+
+# Copy environment file
+cp .env.example .env
+
+# Start the server (from repo root)
+cd ..
+api/.venv/bin/uvicorn api.app.main:app --reload --port 8000
+```
+
+## Accessing the API
+
+Once running, the API is available at:
+
+- **API Base:** http://localhost:8000
+- **Health Check:** http://localhost:8000/health
+- **Database Health:** http://localhost:8000/health/db
+- **API Docs (Swagger):** http://localhost:8000/api/docs
+- **API Docs (ReDoc):** http://localhost:8000/api/redoc
+
+## Environment Variables
+
+The `.env` file contains:
 
 ```bash
 # Application
 DEBUG=true                    # Enable debug mode and API docs
 
 # Server
-API_HOST=0.0.0.0             # Server host (0.0.0.0 = all interfaces)
-API_PORT=8000                # Server port
+API_HOST=0.0.0.0
+API_PORT=8000
 
-# CORS (comma-separated list)
+# CORS
 CORS_ORIGINS=http://localhost:8080,http://localhost:5173
 
-# Database (will be used in EPIC 2)
-DATABASE_URL=postgresql://postgres:postgres@localhost:5432/demand_navigator
+# Database
+DATABASE_URL=postgresql://postgres:postgres@127.0.0.1:5432/demand_navigator?gssencmode=disable
 ```
 
-### CORS Configuration
+**Important:** The database URL uses `127.0.0.1` instead of `localhost` to avoid GSSAPI authentication issues on macOS.
 
-The API is configured to accept requests from:
-- `http://localhost:8080` - Vite dev server (default)
-- `http://localhost:5173` - Alternative Vite port
+## Common Issues & Troubleshooting
 
-Add additional origins to `CORS_ORIGINS` in `.env` if needed.
+### Database Connection Failed
 
-## Testing Endpoints
+**Error:** `⚠️ Database connection failed: role "postgres" does not exist`
 
-### Health Check
+**Cause:** Local PostgreSQL instance is running on port 5432, intercepting connections.
+
+**Fix:**
+```bash
+# Check what's using port 5432
+lsof -nP -iTCP:5432 -sTCP:LISTEN
+
+# Stop local PostgreSQL
+brew services list | grep postgres
+brew services stop postgresql@14  # or your version
+
+# Verify only Docker is listening
+lsof -nP -iTCP:5432 -sTCP:LISTEN
+# Should only show: com.docke
+```
+
+### Port 8000 Already in Use
 
 ```bash
-curl http://localhost:8000/health
+# Find and kill process
+lsof -ti:8000 | xargs kill -9
 ```
 
-**Expected Response:**
-```json
-{
-  "ok": true,
-  "service": "Demand Navigator API",
-  "version": "0.1.0"
-}
-```
-
-### Root Endpoint
+### Database Not Running
 
 ```bash
-curl http://localhost:8000/
+# Start database
+npm run db:start
+
+# Or from repo root
+docker compose up -d db
+
+# Check status
+docker compose ps
 ```
 
-**Expected Response:**
-```json
-{
-  "message": "Welcome to Demand Navigator API",
-  "docs": "/api/docs",
-  "health": "/health"
-}
-```
-
-### Test CORS Headers
+### Dependencies Out of Sync
 
 ```bash
-curl -v -H "Origin: http://localhost:8080" http://localhost:8000/health
-```
-
-Look for these headers in the response:
-```
-access-control-allow-credentials: true
-access-control-allow-origin: http://localhost:8080
-```
-
-## Troubleshooting
-
-### Issue: `ModuleNotFoundError: No module named 'fastapi'`
-
-**Solution:** Ensure virtual environment is activated and dependencies are installed:
-```bash
-source .venv/bin/activate  # or .venv\Scripts\activate on Windows
+cd api
+source .venv/bin/activate
 pip install -e .
 ```
 
-### Issue: `Port 8000 already in use`
+### Virtual Environment Issues
 
-**Solution:** Either:
-1. Stop the existing process using port 8000
-2. Use a different port:
-   ```bash
-   uvicorn api.app.main:app --reload --port 8001
-   ```
-
-### Issue: `Import errors with api.app.config`
-
-**Solution:** Ensure you're running from the correct directory. The command should be run from the repository root, not from inside the `api/` directory:
 ```bash
-# From repo root:
-api/.venv/bin/uvicorn api.app.main:app --reload --port 8000
+# Recreate virtual environment
+cd api
+rm -rf .venv
+python3 -m venv .venv
+source .venv/bin/activate
+pip install -e .
 ```
 
-### Issue: `python3: command not found`
+### Import Errors
 
-**Solution:** Install Python 3.10+ or use `python` instead of `python3` if that's how it's installed on your system.
+Make sure you're running uvicorn from the **repository root**, not from inside the `api/` directory:
 
-### Issue: Virtual environment not activating
+```bash
+# ✅ Correct (from repo root)
+api/.venv/bin/uvicorn api.app.main:app --reload --port 8000
 
-**Solution:** 
-- On Windows, you may need to enable script execution:
-  ```powershell
-  Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
-  ```
-- Ensure you created the venv in the correct directory (`api/`)
+# ❌ Wrong (from api/ directory)
+.venv/bin/uvicorn api.app.main:app --reload --port 8000
+```
+
+## Docker & Database Issues
+
+### Database Won't Start
+
+```bash
+# Check Docker is running
+docker ps
+
+# View database logs
+docker compose logs db
+
+# Restart database
+docker compose down
+docker compose up -d db
+```
+
+### Reset Database
+
+⚠️ **Warning:** This deletes all data!
+
+```bash
+npm run db:reset
+# Or
+docker compose down -v && docker compose up -d db
+```
+
+### Connect to Database
+
+```bash
+# From your Mac
+psql "postgresql://postgres:postgres@127.0.0.1:5432/demand_navigator"
+
+# From inside Docker container
+docker exec -it demand_navigator_db psql -U postgres -d demand_navigator
+```
 
 ## Development Workflow
 
-1. **Activate virtual environment** (always do this first)
+1. **Start database** (if not running)
    ```bash
-   source api/.venv/bin/activate
+   npm run db:start
    ```
 
-2. **Start the server** with auto-reload
+2. **Start API server**
    ```bash
-   api/.venv/bin/uvicorn api.app.main:app --reload --port 8000
+   npm run dev:api
+   # Or
+   cd api && ./start.sh
    ```
 
-3. **Make code changes** - Server will automatically reload
+3. **Make changes** - Server auto-reloads on file changes
 
-4. **Test endpoints** using curl, browser, or API docs at http://localhost:8000/api/docs
+4. **Test endpoints**
+   - Use http://localhost:8000/api/docs for interactive testing
+   - Or use curl/Postman
 
-5. **Deactivate virtual environment** when done
-   ```bash
-   deactivate
-   ```
+5. **View logs** - Check terminal where API is running
 
-## Next Steps (EPIC 2)
+## Testing
 
-The following features will be implemented in future tickets:
-- Database connection and ORM setup (SQLAlchemy)
-- Database migrations (Alembic)
-- Authentication and authorization
-- Additional API endpoints for demand navigation features
+```bash
+cd api
+source .venv/bin/activate
+
+# Run tests (when implemented)
+pytest
+
+# Check API health
+curl http://localhost:8000/health
+curl http://localhost:8000/health/db
+```
+
+## Additional Resources
+
+- **Main Development Guide:** `../docs/DEVELOPMENT.md`
+- **FastAPI Documentation:** https://fastapi.tiangolo.com/
+- **SQLAlchemy Documentation:** https://docs.sqlalchemy.org/
+- **Pydantic Documentation:** https://docs.pydantic.dev/
 
 ---
 
-**Questions?** Refer to the FastAPI documentation: https://fastapi.tiangolo.com/
+For complete setup instructions and troubleshooting, see the main [Development Guide](../docs/DEVELOPMENT.md).

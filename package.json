@@ -1,14 +1,22 @@
 {
-  "name": "vite_react_shadcn_ts",
+  "name": "demand-navigator",
   "private": true,
-  "version": "0.0.0",
+  "version": "0.1.0",
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "vite build",
+    "dev:api": "cd api && .venv/bin/uvicorn api.app.main:app --reload --port 8000",
+    "dev:full": "concurrently --kill-others-on-fail --names \"WEB,API\" --prefix-colors \"cyan,yellow\" \"npm run dev\" \"npm run dev:api\"",
+    "db:start": "docker compose up -d db",
+    "db:stop": "docker compose down",
+    "db:logs": "docker compose logs -f db",
+    "db:reset": "docker compose down -v && docker compose up -d db",
+    "build": "tsc && vite build",
     "build:dev": "vite build --mode development",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "setup": "npm install && cd api && python3 -m venv .venv && .venv/bin/pip install -e .",
+    "setup:env": "cp .env.example .env 2>/dev/null || true && cp api/.env.example api/.env 2>/dev/null || true"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.10.0",
@@ -70,6 +78,7 @@
     "@types/react-dom": "^18.3.7",
     "@vitejs/plugin-react-swc": "^3.11.0",
     "autoprefixer": "^10.4.21",
+    "concurrently": "^9.2.1",
     "eslint": "^9.32.0",
     "eslint-plugin-react-hooks": "^5.2.0",
     "eslint-plugin-react-refresh": "^0.4.20",

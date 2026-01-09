@@ -37,3 +37,5 @@ api/*.pyc
 api/**/*.pyc
 api/.venv/
 api/venv/
+api/*.egg-info/
+api/**/*.egg-info/
