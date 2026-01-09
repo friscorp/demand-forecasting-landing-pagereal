@@ -1,3 +1,5 @@
+````md
+
 # Demand Navigator - Development Setup
 
 Complete guide for setting up and running the Demand Navigator development environment.
@@ -10,24 +12,28 @@ Complete guide for setting up and running the Demand Navigator development envir
 - [Available Scripts](#available-scripts)
 - [Development Workflow](#development-workflow)
 - [Troubleshooting](#troubleshooting)
+- [Project Structure](#project-structure)
+- [Useful Commands](#useful-commands)
+- [Getting Help](#getting-help)
+- [Next Steps](#next-steps)
 
 ## Prerequisites
 
 Before you begin, ensure you have the following installed:
 
-- **Docker Desktop** - For running PostgreSQL database
-  - Download: https://www.docker.com/products/docker-desktop
+- **Docker Desktop** - For running PostgreSQL database  
+  - Download: <https://www.docker.com/products/docker-desktop>  
   - Verify: `docker --version`
 
-- **Node.js 18+** - For frontend development
-  - Download: https://nodejs.org/
+- **Node.js 18+** - For frontend development  
+  - Download: <https://nodejs.org/>  
   - Verify: `node --version`
 
-- **Python 3.10+** - For backend API
-  - Download: https://www.python.org/downloads/
+- **Python 3.10+** - For backend API  
+  - Download: <https://www.python.org/downloads/>  
   - Verify: `python3 --version`
 
-- **Git** - For version control
+- **Git** - For version control  
   - Verify: `git --version`
 
 ## First Time Setup
@@ -37,7 +43,7 @@ Before you begin, ensure you have the following installed:
 ```bash
 git clone <repository-url>
 cd demand-navigator
-```
+````
 
 ### 2. Install All Dependencies
 
@@ -50,10 +56,11 @@ npm run setup:env
 ```
 
 This will:
-- Install all Node.js packages
-- Create Python virtual environment in `api/.venv`
-- Install all Python dependencies
-- Copy `.env.example` to `.env` for both root and API
+
+* Install all Node.js packages
+* Create Python virtual environment in `api/.venv`
+* Install all Python dependencies
+* Copy `.env.example` to `.env` for both root and API
 
 ### 3. Start the Database
 
@@ -91,10 +98,11 @@ npm run dev:full
 ```
 
 This will:
-- Start the frontend on http://localhost:8080
-- Start the API on http://localhost:8000
-- Show color-coded logs for both servers
-- Stop both servers when you press Ctrl+C
+
+* Start the frontend on [http://localhost:8080](http://localhost:8080)
+* Start the API on [http://localhost:8000](http://localhost:8000)
+* Show color-coded logs for both servers
+* Stop both servers when you press Ctrl+C
 
 ### Option 2: Using Shell Script
 
@@ -103,26 +111,30 @@ This will:
 ```
 
 This script:
-- Checks all prerequisites
-- Starts the database
-- Starts the API server
-- Starts the frontend server
-- Provides a clean shutdown on Ctrl+C
+
+* Checks all prerequisites
+* Starts the database
+* Starts the API server
+* Starts the frontend server
+* Provides a clean shutdown on Ctrl+C
 
 ### Option 3: Manual (Separate Terminals)
 
 **Terminal 1 - Database:**
+
 ```bash
 docker compose up -d db
 ```
 
 **Terminal 2 - API Server:**
+
 ```bash
 cd api
 ./start.sh
 ```
 
 **Terminal 3 - Frontend:**
+
 ```bash
 npm run dev
 ```
@@ -133,62 +145,68 @@ npm run dev
 
 #### Development
 
-- **`npm run dev`** - Start frontend only (Vite dev server)
-- **`npm run dev:api`** - Start API only (FastAPI with auto-reload)
-- **`npm run dev:full`** - Start both frontend and API concurrently
+* **`npm run dev`** - Start frontend only (Vite dev server)
+* **`npm run dev:api`** - Start API only (FastAPI with auto-reload)
+* **`npm run dev:full`** - Start both frontend and API concurrently
 
 #### Database Management
 
-- **`npm run db:start`** - Start PostgreSQL database
-- **`npm run db:stop`** - Stop all Docker containers
-- **`npm run db:logs`** - View database logs (follow mode)
-- **`npm run db:reset`** - ⚠️ Reset database (deletes all data)
+* **`npm run db:start`** - Start PostgreSQL database
+* **`npm run db:stop`** - Stop all Docker containers
+* **`npm run db:logs`** - View database logs (follow mode)
+* **`npm run db:reset`** - ⚠️ Reset database (deletes all data)
 
 #### Setup & Configuration
 
-- **`npm run setup`** - Install all dependencies (Node + Python)
-- **`npm run setup:env`** - Copy environment file templates
+* **`npm run setup`** - Install all dependencies (Node + Python)
+* **`npm run setup:env`** - Copy environment file templates
 
 #### Build & Deploy
 
-- **`npm run build`** - Build frontend for production
-- **`npm run build:dev`** - Build frontend in development mode
-- **`npm run lint`** - Run ESLint on frontend code
-- **`npm run preview`** - Preview production build
+* **`npm run build`** - Build frontend for production
+* **`npm run build:dev`** - Build frontend in development mode
+* **`npm run lint`** - Run ESLint on frontend code
+* **`npm run preview`** - Preview production build
 
 ### Shell Scripts
 
-- **`./start-dev.sh`** - Start full development environment with checks
-- **`./api/start.sh`** - Start API server with automatic setup
+* **`./start-dev.sh`** - Start full development environment with checks
+* **`./api/start.sh`** - Start API server with automatic setup
 
 ## Development Workflow
 
 ### Daily Development Routine
 
 1. **Start the database** (if not already running)
+
    ```bash
    npm run db:start
    ```
 
 2. **Start the development servers**
+
    ```bash
    npm run dev:full
    ```
 
 3. **Access the applications**
-   - Frontend: http://localhost:8080
-   - API: http://localhost:8000
-   - API Docs: http://localhost:8000/api/docs
-   - Database: localhost:5432
+
+   * Frontend: [http://localhost:8080](http://localhost:8080)
+   * API: [http://localhost:8000](http://localhost:8000)
+   * API Docs: [http://localhost:8000/api/docs](http://localhost:8000/api/docs)
+   * Database: `localhost:5432`
 
 4. **Make your changes**
-   - Frontend changes auto-reload in the browser
-   - API changes auto-reload the server
+
+   * Frontend changes auto-reload in the browser
+   * API changes auto-reload the server
 
 5. **Stop the servers**
-   - Press `Ctrl+C` in the terminal running `dev:full`
+
+   * Press `Ctrl+C` in the terminal running `dev:full`
 
 6. **Optionally stop the database**
+
    ```bash
    npm run db:stop
    ```
@@ -199,7 +217,7 @@ npm run dev
 npm run dev
 ```
 
-The frontend will run on http://localhost:8080 but won't have API connectivity.
+The frontend will run on [http://localhost:8080](http://localhost:8080) but won't have API connectivity.
 
 ### Working on Backend Only
 
@@ -208,7 +226,7 @@ npm run db:start
 npm run dev:api
 ```
 
-The API will run on http://localhost:8000 with interactive docs at `/api/docs`.
+The API will run on [http://localhost:8000](http://localhost:8000) with interactive docs at `/api/docs`.
 
 ### Resetting the Database
 
@@ -223,6 +241,7 @@ npm run db:reset
 ### Viewing Logs
 
 **Database logs:**
+
 ```bash
 npm run db:logs
 ```
@@ -270,22 +289,26 @@ brew services stop postgresql@14  # or your version
 ### Database Connection Fails
 
 **Check if database is running:**
+
 ```bash
 docker compose ps
 ```
 
 **Restart the database:**
+
 ```bash
 npm run db:stop
 npm run db:start
 ```
 
 **View database logs:**
+
 ```bash
 npm run db:logs
 ```
 
 **Test database connection:**
+
 ```bash
 psql "postgresql://postgres:postgres@127.0.0.1:5432/demand_navigator" -c "SELECT version();"
 ```
@@ -307,6 +330,7 @@ npm install
 ### Virtual Environment Issues
 
 **Recreate virtual environment:**
+
 ```bash
 cd api
 rm -rf .venv
@@ -329,10 +353,12 @@ cp api/.env.example api/.env
 ### Docker Issues
 
 **Docker not running:**
-- Start Docker Desktop application
-- Wait for Docker to fully start
+
+* Start Docker Desktop application
+* Wait for Docker to fully start
 
 **Docker containers won't start:**
+
 ```bash
 # Remove all containers and volumes
 docker compose down -v
@@ -342,6 +368,7 @@ docker compose up -d db
 ```
 
 **Docker out of disk space:**
+
 ```bash
 # Clean up Docker system
 docker system prune -a --volumes
@@ -369,27 +396,27 @@ npm run dev:full
 
 ## Project Structure
 
-```
+```text
 demand-navigator/
 ├── api/                      # Backend API (FastAPI)
 │   ├── app/                  # Application code
-│   │   ├── main.py          # API entrypoint
-│   │   ├── config.py        # Configuration
-│   │   └── db.py            # Database connection
-│   ├── scripts/             # Utility scripts
-│   │   ├── init-db.sql     # Database initialization
-│   │   └── wait-for-db.sh  # Database readiness check
-│   ├── .venv/              # Python virtual environment
-│   ├── .env                # API environment variables
-│   ├── start.sh            # API startup script
-│   └── pyproject.toml      # Python dependencies
-├── src/                     # Frontend (React + Vite)
-├── docs/                    # Documentation
-│   └── DEVELOPMENT.md      # This file
-├── docker-compose.yml       # Docker services
-├── start-dev.sh            # Full stack startup script
-├── package.json            # Node.js dependencies & scripts
-└── .env                    # Frontend environment variables
+│   │   ├── main.py           # API entrypoint
+│   │   ├── config.py         # Configuration
+│   │   └── db.py             # Database connection
+│   ├── scripts/              # Utility scripts
+│   │   ├── init-db.sql       # Database initialization
+│   │   └── wait-for-db.sh    # Database readiness check
+│   ├── .venv/                # Python virtual environment
+│   ├── .env                  # API environment variables
+│   ├── start.sh              # API startup script
+│   └── pyproject.toml        # Python dependencies
+├── src/                      # Frontend (React + Vite)
+├── docs/                     # Documentation
+│   └── DEVELOPMENT.md        # This file
+├── docker-compose.yml        # Docker services
+├── start-dev.sh              # Full stack startup script
+├── package.json              # Node.js dependencies & scripts
+└── .env                      # Frontend environment variables
 ```
 
 ## Useful Commands
@@ -443,20 +470,16 @@ npm run preview
 
 ## Getting Help
 
-- **API Documentation:** http://localhost:8000/api/docs (when API is running)
-- **FastAPI Docs:** https://fastapi.tiangolo.com/
-- **React Docs:** https://react.dev/
-- **Vite Docs:** https://vitejs.dev/
+* **API Documentation:** [http://localhost:8000/api/docs](http://localhost:8000/api/docs) (when API is running)
+* **FastAPI Docs:** [https://fastapi.tiangolo.com/](https://fastapi.tiangolo.com/)
+* **React Docs:** [https://react.dev/](https://react.dev/)
+* **Vite Docs:** [https://vitejs.dev/](https://vitejs.dev/)
 
 ## Next Steps
 
 After getting the development environment running:
 
 1. Read the API documentation at `api/README.md`
-2. Explore the API endpoints at http://localhost:8000/api/docs
+2. Explore the API endpoints at [http://localhost:8000/api/docs](http://localhost:8000/api/docs)
 3. Check out the frontend code in `src/`
 4. Review the project architecture documentation (when available)
-
----
-
-**Happy coding! 🚀**
