@@ -1,18 +1,27 @@
-import { useState } from "react";
-import { ArrowRight, BarChart3 } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import heroBackground from "@/assets/hero-background.jpg";
+"use client"
+
+import type React from "react"
+
+import { useState } from "react"
+import { useNavigate } from "react-router-dom"
+import { useOnboarding } from "@/context/OnboardingContext"
+import { ArrowRight, BarChart3 } from "lucide-react"
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import heroBackground from "@/assets/hero-background.jpg"
 
 const HeroSection = () => {
-  const [businessName, setBusinessName] = useState("");
+  const [businessName, setBusinessName] = useState("")
+  const navigate = useNavigate()
+  const { updateData } = useOnboarding()
 
   const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
+    e.preventDefault()
     if (businessName.trim()) {
-      console.log("Business name submitted:", businessName);
+      updateData({ businessName: businessName.trim() })
+      navigate("/onboarding")
     }
-  };
+  }
 
   return (
     <section className="relative min-h-screen w-full overflow-hidden">
@@ -74,7 +83,7 @@ const HeroSection = () => {
         </div>
       </div>
     </section>
-  );
-};
+  )
+}
 
-export default HeroSection;
+export default HeroSection
