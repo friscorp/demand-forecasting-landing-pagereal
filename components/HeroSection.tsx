@@ -3,17 +3,22 @@
 import type React from "react"
 
 import { useState } from "react"
+import { useRouter } from "next/navigation"
 import { ArrowRight, BarChart3 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
+import { useOnboarding } from "@/lib/onboarding-context"
 
 export default function HeroSection() {
   const [businessName, setBusinessName] = useState("")
+  const { updateBusiness } = useOnboarding()
+  const router = useRouter()
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
     if (businessName.trim()) {
-      console.log("Business name submitted:", businessName)
+      updateBusiness({ name: businessName.trim() })
+      router.push("/onboarding")
     }
   }
 
