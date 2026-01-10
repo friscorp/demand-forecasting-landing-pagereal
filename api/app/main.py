@@ -5,8 +5,9 @@ from fastapi.responses import JSONResponse
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from api.app.config import get_settings
-from api.app.db import init_db, close_db, get_db
+from app.config import get_settings
+from app.db import init_db, close_db, get_db
+from app.routers.forecast import router as forecast_router
 
 settings = get_settings()
 
@@ -37,6 +38,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+app.include_router(forecast_router)
 
 @app.get("/health")
 async def health():
