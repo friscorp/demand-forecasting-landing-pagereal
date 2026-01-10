@@ -1,16 +1,68 @@
 "use client"
 
 import { useOnboarding } from "@/lib/onboarding-context"
+import { useForecast } from "@/lib/forecast-context"
+import { generateForecast } from "@/lib/forecast-client"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
-import { Sparkles, CheckCircle2 } from "lucide-react"
+import { Sparkles, CheckCircle2, Loader2 } from "lucide-react"
+import { useState } from "react"
+import { useNavigate } from "react-router-dom"
+import { useToast } from "@/hooks/use-toast"
 
 export function StepGenerateForecast() {
   const { data } = useOnboarding()
+  const { setForecast, setSelectedItem } = useForecast()
+  const navigate = useNavigate()
+  const { toast } = useToast()
+  const [isLoading, setIsLoading] = useState(false)
 
-  const handleGenerate = () => {
-    console.log("Generating forecast with data:", data)
-    // TODO: Implement forecast generation API call
+  const handleGenerate = async () => {
+    if (!data.csvFile || !data.csvColumns) {
+      toast({
+        title: "Missing data",
+        description: "Please upload a CSV file and map the columns first",
+        variant: "destructive",
+      })
+      return
+    }
+
+    setIsLoading(true)
+    try {
+      const result = await generateForecast({
+        file: data.csvFile,
+        mapping: {
+          date: data.csvColumns.date,
+          item: data.csvColumns.item,
+          quantity: data.csvColumns.quantity,
+        },
+        horizon_days: 7,
+      })
+
+      setForecast(result)
+
+      // Set first item as selected
+      const items = Object.keys(result)
+      if (items.length > 0) {
+        setSelectedItem(items[0])
+      }
+
+      toast({
+        title: "Forecast generated!",
+        description: "Your demand forecast is ready to view",
+      })
+
+      navigate("/dashboard")
+    } catch (error) {
+      console.error("Forecast generation error:", error)
+      toast({
+        title: "Error generating forecast",
+        description: error instanceof Error ? error.message : "An unknown error occurred",
+        variant: "destructive",
+      })
+    } finally {
+      setIsLoading(false)
+    }
   }
 
   const completedSteps = [
@@ -42,9 +94,18 @@ export function StepGenerateForecast() {
         <p className="mb-6 text-sm text-muted-foreground">
           Our AI will analyze your data and generate accurate demand predictions
         </p>
-        <Button onClick={handleGenerate} size="lg" className="gap-2">
-          <Sparkles className="h-5 w-5" />
-          Generate Forecast
+        <Button onClick={handleGenerate} size="lg" className="gap-2" disabled={isLoading}>
+          {isLoading ? (
+            <>
+              <Loader2 className="h-5 w-5 animate-spin" />
+              Generating Forecast...
+            </>
+          ) : (
+            <>
+              <Sparkles className="h-5 w-5" />
+              Generate Forecast
+            </>
+          )}
         </Button>
       </div>
     </div>
