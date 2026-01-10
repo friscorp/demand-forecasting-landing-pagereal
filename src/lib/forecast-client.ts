@@ -8,7 +8,8 @@ export interface ForecastPoint {
 }
 
 export interface ForecastResponse {
-  [item: string]: ForecastPoint[]
+  mode: string
+  results: Record<string, { forecast: ForecastPoint[] }>
 }
 
 export interface ForecastRequest {
@@ -37,5 +38,7 @@ export async function generateForecast(request: ForecastRequest): Promise<Foreca
     throw new Error(`Forecast generation failed: ${error}`)
   }
 
-  return response.json()
+  const data = await response.json()
+  console.log("[v0] Forecast API Response:", data)
+  return data
 }

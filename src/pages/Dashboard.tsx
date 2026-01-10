@@ -12,7 +12,7 @@ export default function Dashboard() {
   const { forecast, selectedItem, setSelectedItem } = useForecast()
   const navigate = useNavigate()
 
-  if (!forecast) {
+  if (!forecast || !forecast.results) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-background to-muted">
         <Card className="w-full max-w-md">
@@ -31,9 +31,29 @@ export default function Dashboard() {
     )
   }
 
-  const items = Object.keys(forecast)
+  const items = Object.keys(forecast.results)
+
+  if (items.length === 0) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-background to-muted">
+        <Card className="w-full max-w-md">
+          <CardHeader className="text-center">
+            <TrendingUp className="mx-auto mb-4 h-12 w-12 text-primary" />
+            <CardTitle>No Products Found</CardTitle>
+            <CardDescription>The forecast returned no products. Please try again.</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Button onClick={() => navigate("/onboarding")} className="w-full">
+              Start Onboarding
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    )
+  }
+
   const currentItem = selectedItem || items[0]
-  const forecastData = forecast[currentItem] || []
+  const forecastData = forecast.results[currentItem]?.forecast || []
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background to-muted p-8">
@@ -70,32 +90,36 @@ export default function Dashboard() {
             </div>
           </CardHeader>
           <CardContent>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Date</TableHead>
-                  <TableHead className="text-right">Predicted Demand</TableHead>
-                  <TableHead className="text-right">Lower Bound</TableHead>
-                  <TableHead className="text-right">Upper Bound</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {forecastData.map((point, index) => (
-                  <TableRow key={index}>
-                    <TableCell className="font-medium">
-                      {new Date(point.ds).toLocaleDateString("en-US", {
-                        weekday: "short",
-                        month: "short",
-                        day: "numeric",
-                      })}
-                    </TableCell>
-                    <TableCell className="text-right font-semibold">{point.yhat.toFixed(2)}</TableCell>
-                    <TableCell className="text-right text-muted-foreground">{point.yhat_lower.toFixed(2)}</TableCell>
-                    <TableCell className="text-right text-muted-foreground">{point.yhat_upper.toFixed(2)}</TableCell>
+            {forecastData.length > 0 ? (
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Date</TableHead>
+                    <TableHead className="text-right">Predicted Demand</TableHead>
+                    <TableHead className="text-right">Lower Bound</TableHead>
+                    <TableHead className="text-right">Upper Bound</TableHead>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+                </TableHeader>
+                <TableBody>
+                  {forecastData.map((point, index) => (
+                    <TableRow key={index}>
+                      <TableCell className="font-medium">
+                        {new Date(point.ds).toLocaleDateString("en-US", {
+                          weekday: "short",
+                          month: "short",
+                          day: "numeric",
+                        })}
+                      </TableCell>
+                      <TableCell className="text-right font-semibold">{point.yhat.toFixed(2)}</TableCell>
+                      <TableCell className="text-right text-muted-foreground">{point.yhat_lower.toFixed(2)}</TableCell>
+                      <TableCell className="text-right text-muted-foreground">{point.yhat_upper.toFixed(2)}</TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            ) : (
+              <div className="py-8 text-center text-muted-foreground">No forecast data available for this product.</div>
+            )}
           </CardContent>
         </Card>
       </div>
