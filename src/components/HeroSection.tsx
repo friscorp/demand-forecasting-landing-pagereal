@@ -4,7 +4,7 @@ import type React from "react"
 
 import { useState } from "react"
 import { useNavigate } from "react-router-dom"
-import { useOnboarding } from "@/context/OnboardingContext"
+import { useOnboarding } from "@/lib/onboarding-context"
 import { ArrowRight, BarChart3 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
