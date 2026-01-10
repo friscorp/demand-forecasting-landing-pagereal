@@ -1,4 +1,4 @@
-````md
+\`\`\``md
 
 # Demand Navigator - Development Setup
 
@@ -40,20 +40,20 @@ Before you begin, ensure you have the following installed:
 
 ### 1. Clone the Repository
 
-```bash
+\`\`\`bash
 git clone <repository-url>
 cd demand-navigator
-````
+\`\`\``
 
 ### 2. Install All Dependencies
 
-```bash
+\`\`\`bash
 # Install Node.js dependencies and set up Python virtual environment
 npm run setup
 
 # Copy environment configuration files
 npm run setup:env
-```
+\`\`\`
 
 This will:
 
@@ -64,22 +64,22 @@ This will:
 
 ### 3. Start the Database
 
-```bash
+\`\`\`bash
 npm run db:start
-```
+\`\`\`
 
 Wait for the database to be healthy (about 5 seconds).
 
 ### 4. Verify Setup
 
-```bash
+\`\`\`bash
 # Check database is running
 docker compose ps
 
 # Should show:
 # NAME                  STATUS
 # demand_navigator_db   Up (healthy)
-```
+\`\`\`
 
 ## Running the Application
 
@@ -89,13 +89,13 @@ You have three options for running the development environment:
 
 Start everything with one command:
 
-```bash
+\`\`\`bash
 # Start database first
 npm run db:start
 
 # Start both frontend and API concurrently
 npm run dev:full
-```
+\`\`\`
 
 This will:
 
@@ -106,9 +106,9 @@ This will:
 
 ### Option 2: Using Shell Script
 
-```bash
+\`\`\`bash
 ./start-dev.sh
-```
+\`\`\`
 
 This script:
 
@@ -122,22 +122,22 @@ This script:
 
 **Terminal 1 - Database:**
 
-```bash
+\`\`\`bash
 docker compose up -d db
-```
+\`\`\`
 
 **Terminal 2 - API Server:**
 
-```bash
+\`\`\`bash
 cd api
 ./start.sh
-```
+\`\`\`
 
 **Terminal 3 - Frontend:**
 
-```bash
+\`\`\`bash
 npm run dev
-```
+\`\`\`
 
 ## Available Scripts
 
@@ -179,15 +179,15 @@ npm run dev
 
 1. **Start the database** (if not already running)
 
-   ```bash
+   \`\`\`bash
    npm run db:start
-   ```
+   \`\`\`
 
 2. **Start the development servers**
 
-   ```bash
+   \`\`\`bash
    npm run dev:full
-   ```
+   \`\`\`
 
 3. **Access the applications**
 
@@ -207,24 +207,24 @@ npm run dev
 
 6. **Optionally stop the database**
 
-   ```bash
+   \`\`\`bash
    npm run db:stop
-   ```
+   \`\`\`
 
 ### Working on Frontend Only
 
-```bash
+\`\`\`bash
 npm run dev
-```
+\`\`\`
 
 The frontend will run on [http://localhost:8080](http://localhost:8080) but won't have API connectivity.
 
 ### Working on Backend Only
 
-```bash
+\`\`\`bash
 npm run db:start
 npm run dev:api
-```
+\`\`\`
 
 The API will run on [http://localhost:8000](http://localhost:8000) with interactive docs at `/api/docs`.
 
@@ -232,9 +232,9 @@ The API will run on [http://localhost:8000](http://localhost:8000) with interact
 
 If you need to start fresh with a clean database:
 
-```bash
+\`\`\`bash
 npm run db:reset
-```
+\`\`\`
 
 ⚠️ **Warning:** This deletes all data in the database!
 
@@ -242,9 +242,9 @@ npm run db:reset
 
 **Database logs:**
 
-```bash
+\`\`\`bash
 npm run db:logs
-```
+\`\`\`
 
 **API logs:**
 Visible in the terminal where you started the API server.
@@ -258,97 +258,97 @@ Visible in the terminal where you started the frontend server.
 
 #### Port 8000 (API)
 
-```bash
+\`\`\`bash
 # Find and kill process on port 8000
 lsof -ti:8000 | xargs kill -9
-```
+\`\`\`
 
 #### Port 8080 or 5173 (Frontend)
 
-```bash
+\`\`\`bash
 # Find and kill process on port 8080
 lsof -ti:8080 | xargs kill -9
 
 # Find and kill process on port 5173
 lsof -ti:5173 | xargs kill -9
-```
+\`\`\`
 
 #### Port 5432 (Database)
 
 If you have a local PostgreSQL instance running:
 
-```bash
+\`\`\`bash
 # Check what's using port 5432
 lsof -nP -iTCP:5432 -sTCP:LISTEN
 
 # If you see a local postgres process, stop it
 brew services list | grep postgres
 brew services stop postgresql@14  # or your version
-```
+\`\`\`
 
 ### Database Connection Fails
 
 **Check if database is running:**
 
-```bash
+\`\`\`bash
 docker compose ps
-```
+\`\`\`
 
 **Restart the database:**
 
-```bash
+\`\`\`bash
 npm run db:stop
 npm run db:start
-```
+\`\`\`
 
 **View database logs:**
 
-```bash
+\`\`\`bash
 npm run db:logs
-```
+\`\`\`
 
 **Test database connection:**
 
-```bash
+\`\`\`bash
 psql "postgresql://postgres:postgres@127.0.0.1:5432/demand_navigator" -c "SELECT version();"
-```
+\`\`\`
 
 ### Python Dependencies Out of Sync
 
-```bash
+\`\`\`bash
 cd api
 source .venv/bin/activate
 pip install -e .
-```
+\`\`\`
 
 ### Node Dependencies Out of Sync
 
-```bash
+\`\`\`bash
 npm install
-```
+\`\`\`
 
 ### Virtual Environment Issues
 
 **Recreate virtual environment:**
 
-```bash
+\`\`\`bash
 cd api
 rm -rf .venv
 python3 -m venv .venv
 source .venv/bin/activate
 pip install -e .
-```
+\`\`\`
 
 ### Environment Variables Missing
 
-```bash
+\`\`\`bash
 # Copy environment templates
 npm run setup:env
 
 # Or manually:
 cp .env.example .env
 cp api/.env.example api/.env
-```
+\`\`\`
 
 ### Docker Issues
 
@@ -359,26 +359,26 @@ cp api/.env.example api/.env
 
 **Docker containers won't start:**
 
-```bash
+\`\`\`bash
 # Remove all containers and volumes
 docker compose down -v
 
 # Start fresh
 docker compose up -d db
-```
+\`\`\`
 
 **Docker out of disk space:**
 
-```bash
+\`\`\`bash
 # Clean up Docker system
 docker system prune -a --volumes
-```
+\`\`\`
 
 ### Fresh Install
 
 If everything is broken, start from scratch:
 
-```bash
+\`\`\`bash
 # Remove all dependencies
 rm -rf node_modules api/.venv
 
@@ -392,11 +392,11 @@ npm run setup:env
 # Start fresh
 npm run db:start
 npm run dev:full
-```
+\`\`\`
 
 ## Project Structure
 
-```text
+\`\`\`text
 demand-navigator/
 ├── api/                      # Backend API (FastAPI)
 │   ├── app/                  # Application code
@@ -417,13 +417,13 @@ demand-navigator/
 ├── start-dev.sh              # Full stack startup script
 ├── package.json              # Node.js dependencies & scripts
 └── .env                      # Frontend environment variables
-```
+\`\`\`
 
 ## Useful Commands
 
 ### Database
 
-```bash
+\`\`\`bash
 # Connect to database with psql
 psql "postgresql://postgres:postgres@127.0.0.1:5432/demand_navigator"
 
@@ -438,11 +438,11 @@ docker exec demand_navigator_db pg_dump -U postgres demand_navigator > backup.sq
 
 # Restore database
 cat backup.sql | docker exec -i demand_navigator_db psql -U postgres -d demand_navigator
-```
+\`\`\`
 
 ### API
 
-```bash
+\`\`\`bash
 # Run API tests (when implemented)
 cd api
 source .venv/bin/activate
@@ -453,11 +453,11 @@ curl http://localhost:8000/health
 
 # Check database connection
 curl http://localhost:8000/health/db
-```
+\`\`\`
 
 ### Frontend
 
-```bash
+\`\`\`bash
 # Run frontend tests (when implemented)
 npm test
 
@@ -466,7 +466,7 @@ npm run build
 
 # Preview production build
 npm run preview
-```
+\`\`\`
 
 ## Getting Help
 

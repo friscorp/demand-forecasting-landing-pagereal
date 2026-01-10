@@ -1,4 +1,4 @@
-````md
+\`\`\``md
 
 # Demand Navigator API
 
@@ -15,7 +15,7 @@ The `api/` directory contains the Python backend API built with FastAPI. It prov
 
 ## File Structure
 
-```text
+\`\`\`text
 api/
 ├── app/
 │   ├── __init__.py          # Package initializer
@@ -31,7 +31,7 @@ api/
 ├── pyproject.toml           # Python dependencies
 ├── start.sh                 # API startup script
 └── README.md                # This file
-````
+\`\`\``
 
 ## Key Files
 
@@ -68,7 +68,7 @@ Python dependencies:
 
 ### Using npm scripts (from repo root)
 
-```bash
+\`\`\`bash
 # Start database first
 npm run db:start
 
@@ -77,14 +77,14 @@ npm run dev:api
 
 # Start both frontend and API
 npm run dev:full
-```
+\`\`\`
 
 ### Using the startup script
 
-```bash
+\`\`\`bash
 cd api
 ./start.sh
-```
+\`\`\`
 
 This script automatically:
 
@@ -96,7 +96,7 @@ This script automatically:
 
 ### Manual setup
 
-```bash
+\`\`\`bash
 cd api
 
 # Create virtual environment
@@ -112,7 +112,7 @@ cp .env.example .env
 # Start the server (from repo root)
 cd ..
 api/.venv/bin/uvicorn api.app.main:app --reload --port 8000
-```
+\`\`\`
 
 ## Accessing the API
 
@@ -128,7 +128,7 @@ Once running, the API is available at:
 
 The `.env` file contains:
 
-```bash
+\`\`\`bash
 # Application
 DEBUG=true                    # Enable debug mode and API docs
 
@@ -141,7 +141,7 @@ CORS_ORIGINS=http://localhost:8080,http://localhost:5173
 
 # Database
 DATABASE_URL=postgresql://postgres:postgres@127.0.0.1:5432/demand_navigator?gssencmode=disable
-```
+\`\`\`
 
 **Important:** The database URL uses `127.0.0.1` instead of `localhost` to avoid GSSAPI authentication issues on macOS.
 
@@ -155,7 +155,7 @@ DATABASE_URL=postgresql://postgres:postgres@127.0.0.1:5432/demand_navigator?gsse
 
 **Fix:**
 
-```bash
+\`\`\`bash
 # Check what's using port 5432
 lsof -nP -iTCP:5432 -sTCP:LISTEN
 
@@ -166,18 +166,18 @@ brew services stop postgresql@14  # or your version
 # Verify only Docker is listening
 lsof -nP -iTCP:5432 -sTCP:LISTEN
 # Should only show: com.docke...
-```
+\`\`\`
 
 ### Port 8000 Already in Use
 
-```bash
+\`\`\`bash
 # Find and kill process
 lsof -ti:8000 | xargs kill -9
-```
+\`\`\`
 
 ### Database Not Running
 
-```bash
+\`\`\`bash
 # Start database
 npm run db:start
 
@@ -186,44 +186,44 @@ docker compose up -d db
 
 # Check status
 docker compose ps
-```
+\`\`\`
 
 ### Dependencies Out of Sync
 
-```bash
+\`\`\`bash
 cd api
 source .venv/bin/activate
 pip install -e .
-```
+\`\`\`
 
 ### Virtual Environment Issues
 
-```bash
+\`\`\`bash
 # Recreate virtual environment
 cd api
 rm -rf .venv
 python3 -m venv .venv
 source .venv/bin/activate
 pip install -e .
-```
+\`\`\`
 
 ### Import Errors
 
 Make sure you're running uvicorn from the **repository root**, not from inside the `api/` directory:
 
-```bash
+\`\`\`bash
 # ✅ Correct (from repo root)
 api/.venv/bin/uvicorn api.app.main:app --reload --port 8000
 
 # ❌ Wrong (from api/ directory)
 .venv/bin/uvicorn api.app.main:app --reload --port 8000
-```
+\`\`\`
 
 ## Docker & Database Issues
 
 ### Database Won't Start
 
-```bash
+\`\`\`bash
 # Check Docker is running
 docker ps
 
@@ -233,43 +233,43 @@ docker compose logs db
 # Restart database
 docker compose down
 docker compose up -d db
-```
+\`\`\`
 
 ### Reset Database
 
 ⚠️ **Warning:** This deletes all data!
 
-```bash
+\`\`\`bash
 npm run db:reset
 # Or
 docker compose down -v && docker compose up -d db
-```
+\`\`\`
 
 ### Connect to Database
 
-```bash
+\`\`\`bash
 # From your machine
 psql "postgresql://postgres:postgres@127.0.0.1:5432/demand_navigator"
 
 # From inside Docker container
 docker exec -it demand_navigator_db psql -U postgres -d demand_navigator
-```
+\`\`\`
 
 ## Development Workflow
 
 1. **Start database** (if not running)
 
-   ```bash
+   \`\`\`bash
    npm run db:start
-   ```
+   \`\`\`
 
 2. **Start API server**
 
-   ```bash
+   \`\`\`bash
    npm run dev:api
    # Or
    cd api && ./start.sh
-   ```
+   \`\`\`
 
 3. **Make changes**
    Server auto-reloads on file changes.
@@ -284,7 +284,7 @@ docker exec -it demand_navigator_db psql -U postgres -d demand_navigator
 
 ## Testing
 
-```bash
+\`\`\`bash
 cd api
 source .venv/bin/activate
 
@@ -294,7 +294,7 @@ pytest
 # Check API health
 curl http://localhost:8000/health
 curl http://localhost:8000/health/db
-```
+\`\`\`
 
 ## Additional Resources
 

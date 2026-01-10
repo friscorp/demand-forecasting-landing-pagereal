@@ -14,7 +14,7 @@ Install these before starting:
 
 Verify installations:
 
-```bash
+\`\`\`bash
 docker --version
 node --version
 python3 --version
@@ -22,7 +22,7 @@ python3 --version
 
 ### Setup (First Time)
 
-```bash
+\`\`\`bash
 # 1. Clone the repository
 git clone <repository-url>
 cd demand-navigator
@@ -38,7 +38,7 @@ npm run db:start
 
 # 5. Start the development servers
 npm run dev:full
-```
+\`\`\`
 
 That's it! You should now have:
 
@@ -48,7 +48,7 @@ That's it! You should now have:
 
 ## 📁 Project Structure
 
-```bash
+\`\`\`bash
 demand-navigator/
 ├── src/                    # Frontend (React + Vite + TypeScript)
 ├── api/                    # Backend (FastAPI + Python)
@@ -60,37 +60,37 @@ demand-navigator/
 ├── docker-compose.yml      # Database services
 ├── start-dev.sh           # Full stack startup script
 └── package.json           # Node.js scripts & dependencies
-```
+\`\`\`
 
 ## 🛠️ Development Commands
 
 ### Start Everything
 
-```bash
+\`\`\`bash
 # Option 1: Using npm (recommended)
 npm run db:start    # Start database
 npm run dev:full    # Start frontend + API
 
 # Option 2: Using shell script
 ./start-dev.sh
-```
+\`\`\`
 
 ### Individual Services
 
-```bash
+\`\`\`bash
 npm run dev         # Frontend only
 npm run dev:api     # API only
 npm run db:start    # Database only
-```
+\`\`\`
 
 ### Database Management
 
-```bash
+\`\`\`bash
 npm run db:start    # Start PostgreSQL
 npm run db:stop     # Stop all containers
 npm run db:logs     # View database logs
 npm run db:reset    # Reset database (⚠️ deletes data)
-```
+\`\`\`
 
 ## 📚 Documentation
 
@@ -101,33 +101,33 @@ npm run db:reset    # Reset database (⚠️ deletes data)
 
 ### Port Already in Use
 
-```bash
+\`\`\`bash
 # Kill process on port 8000 (API)
 lsof -ti:8000 | xargs kill -9
 
 # Kill process on port 8080 (Frontend)
 lsof -ti:8080 | xargs kill -9
-```
+\`\`\`
 
 ### Database Connection Failed
 
-```bash
+\`\`\`bash
 # Check if local PostgreSQL is conflicting
 lsof -nP -iTCP:5432 -sTCP:LISTEN
 
 # Stop local PostgreSQL if running
 brew services stop postgresql@14
-```
+\`\`\`
 
 ### Fresh Install
 
-```bash
+\`\`\`bash
 # Remove everything and start over
 rm -rf node_modules api/.venv
 docker compose down -v
 npm run setup
 npm run setup:env
-```
+\`\`\`
 
 ## 🎯 What's Implemented
 
