@@ -15,7 +15,7 @@
     "build:dev": "vite build --mode development",
     "lint": "eslint .",
     "preview": "vite preview",
-    "setup": "npm install && cd api && python3 -m venv .venv && .venv/bin/pip install -e .",
+    "setup": "npm install && cd api && python3 -m venv .venv && .venv/bin/pip install --upgrade pip setuptools wheel && .venv/bin/pip install -e .",
     "setup:env": "cp .env.example .env 2>/dev/null || true && cp api/.env.example api/.env 2>/dev/null || true"
   },
   "dependencies": {
