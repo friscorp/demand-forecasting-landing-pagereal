@@ -110,9 +110,9 @@ export default function Dashboard() {
                           day: "numeric",
                         })}
                       </TableCell>
-                      <TableCell className="text-right font-semibold">{point.yhat.toFixed(2)}</TableCell>
-                      <TableCell className="text-right text-muted-foreground">{point.yhat_lower.toFixed(2)}</TableCell>
-                      <TableCell className="text-right text-muted-foreground">{point.yhat_upper.toFixed(2)}</TableCell>
+                      <TableCell className="text-right font-semibold">{Math.round(point.yhat)}</TableCell>
+                      <TableCell className="text-right text-muted-foreground">{point.yhat_lower.toFixed(1)}</TableCell>
+                      <TableCell className="text-right text-muted-foreground">{point.yhat_upper.toFixed(1)}</TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
