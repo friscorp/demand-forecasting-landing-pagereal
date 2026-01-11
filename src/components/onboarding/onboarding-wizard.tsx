@@ -29,7 +29,7 @@ const steps = [
 
 export function OnboardingWizard() {
   const { currentStep, setCurrentStep, data } = useOnboarding()
-  const { user } = useAuth()
+  const { user, loading: authLoading } = useAuth()
   const { setForecast } = useForecast()
   const navigate = useNavigate()
   const CurrentStepComponent = steps[currentStep].component
@@ -44,6 +44,10 @@ export function OnboardingWizard() {
 
   const handleNext = async () => {
     if (currentStep === 3) {
+      if (authLoading) {
+        return // Wait for auth to hydrate
+      }
+
       if (!user) {
         setShowAuthModal(true)
         return
@@ -103,6 +107,10 @@ export function OnboardingWizard() {
     }
 
     if (currentStep === 6) {
+      if (authLoading) {
+        return // Wait for auth to hydrate
+      }
+
       if (!user) {
         setShowAuthModal(true)
         return
@@ -226,15 +234,17 @@ export function OnboardingWizard() {
           <ChevronLeft className="h-4 w-4" />
           Back
         </Button>
-        <Button onClick={handleNext} disabled={isIngesting || isForecastingDB} className="gap-2">
+        <Button onClick={handleNext} disabled={isIngesting || isForecastingDB || authLoading} className="gap-2">
           {isIngesting
             ? "Uploading..."
             : isForecastingDB
               ? "Generating..."
-              : currentStep === steps.length - 1
-                ? "Generate Forecast"
-                : "Continue"}
-          {!isIngesting && !isForecastingDB && <ChevronRight className="h-4 w-4" />}
+              : authLoading
+                ? "Loading..."
+                : currentStep === steps.length - 1
+                  ? "Generate Forecast"
+                  : "Continue"}
+          {!isIngesting && !isForecastingDB && !authLoading && <ChevronRight className="h-4 w-4" />}
         </Button>
       </div>
 

@@ -9,13 +9,19 @@ import { ArrowLeft, TrendingUp, CheckCircle2 } from "lucide-react"
 import { useNavigate } from "react-router-dom"
 import { AuthStatus } from "@/components/auth-status"
 import { useEffect, useState } from "react"
+import { useAuth } from "@/lib/auth-context"
 
 export default function Dashboard() {
   const { forecast, selectedItem, setSelectedItem, setForecast } = useForecast()
+  const { loading: authLoading } = useAuth()
   const navigate = useNavigate()
   const [isSynced, setIsSynced] = useState(false)
 
   useEffect(() => {
+    if (authLoading) {
+      return
+    }
+
     if (!forecast) {
       const storedForecast = localStorage.getItem("dn_forecast_json")
       if (storedForecast) {
@@ -31,7 +37,18 @@ export default function Dashboard() {
     // Check if we have a saved run ID (indicates data is synced to database)
     const runId = localStorage.getItem("dn_latest_run_id")
     setIsSynced(!!runId)
-  }, [forecast, setForecast])
+  }, [forecast, setForecast, authLoading])
+
+  if (authLoading) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-background to-muted">
+        <div className="text-center">
+          <div className="mb-4 h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent mx-auto" />
+          <p className="text-muted-foreground">Loading...</p>
+        </div>
+      </div>
+    )
+  }
 
   if (!forecast || !forecast.results) {
     return (

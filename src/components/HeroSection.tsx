@@ -22,7 +22,7 @@ const HeroSection = () => {
   const navigate = useNavigate()
   const { updateData } = useOnboarding()
   const { setForecast } = useForecast()
-  const { user } = useAuth()
+  const { user, loading: authLoading } = useAuth()
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
@@ -33,6 +33,10 @@ const HeroSection = () => {
   }
 
   const handleGoToDashboard = async () => {
+    if (authLoading) {
+      return // Auth still loading, don't proceed yet
+    }
+
     if (!user) {
       setShowAuthModal(true)
       return
@@ -148,7 +152,7 @@ const HeroSection = () => {
                 <Button
                   variant="outline"
                   onClick={handleGoToDashboard}
-                  disabled={isLoadingRun}
+                  disabled={isLoadingRun || authLoading}
                   className="bg-card hover:bg-card/90"
                 >
                   {isLoadingRun ? "Loading..." : "Go to Dashboard"}
