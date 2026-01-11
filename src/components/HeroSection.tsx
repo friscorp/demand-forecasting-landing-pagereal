@@ -66,7 +66,6 @@ const HeroSection = () => {
         return
       }
 
-      // Populate dashboard state from latest run
       localStorage.setItem("dn_forecast_json", JSON.stringify(latestRun.forecast_json))
       localStorage.setItem("dn_mapping_json", JSON.stringify(latestRun.mapping_json))
       localStorage.setItem("dn_latest_run_id", String(latestRun.id))
@@ -74,6 +73,11 @@ const HeroSection = () => {
 
       setForecast(latestRun.forecast_json)
       updateData({ businessName: latestRun.business_name })
+
+      localStorage.removeItem("onboarding-step")
+      localStorage.removeItem("onboarding-data")
+
+      console.log("[v0] Dashboard state restored from run:", latestRun.id)
 
       // Navigate to dashboard
       navigate("/dashboard")

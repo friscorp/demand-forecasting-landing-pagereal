@@ -142,12 +142,23 @@ export function OnboardingWizard() {
 
           console.log("[v0] Saved run:", runResponse)
 
-          // Store both run ID and full run object
-          localStorage.setItem("dn_latest_run_id", String(runResponse.id))
-          localStorage.setItem("dn_latest_run", JSON.stringify(runResponse))
+          const normalizedRun = {
+            id: runResponse.id,
+            business_name: runResponse.business_name,
+            mapping_json: runResponse.mapping_json,
+            forecast_json: runResponse.forecast_json,
+            insights_json: runResponse.insights_json,
+            created_at: runResponse.created_at,
+          }
+
+          localStorage.setItem("dn_latest_run_id", String(normalizedRun.id))
+          localStorage.setItem("dn_latest_run", JSON.stringify(normalizedRun))
+
+          localStorage.removeItem("onboarding-step")
+          localStorage.removeItem("onboarding-data")
         } catch (saveError) {
           console.error("[v0] Failed to save run:", saveError)
-          setForecastError("Could not sync to database—data saved locally. You can retry later.")
+          setForecastError("Could not sync—data saved locally")
           // Don't block navigation if save fails
         }
 

@@ -102,9 +102,26 @@ export async function saveRun(data: SaveRunRequest): Promise<SaveRunResponse> {
 
 export async function getLatestRun(): Promise<SaveRunResponse | null> {
   try {
-    return await apiFetch("/runs/latest", {
+    const run = await apiFetch("/runs/latest", {
       method: "GET",
     })
+
+    const normalized = {
+      id: run.id,
+      business_name: run.business_name ?? run.businessName,
+      mapping_json: run.mapping_json ?? run.mappingJson,
+      forecast_json: run.forecast_json ?? run.forecastJson,
+      insights_json: run.insights_json ?? run.insightsJson,
+      created_at: run.created_at ?? run.createdAt,
+    }
+
+    console.log("[v0] Latest run fetched:", normalized)
+
+    if (!normalized.forecast_json) {
+      console.error("[v0] Latest run missing forecast_json", run)
+    }
+
+    return normalized
   } catch (error) {
     // If no runs exist, return null
     if (error instanceof Error && error.message.includes("404")) {

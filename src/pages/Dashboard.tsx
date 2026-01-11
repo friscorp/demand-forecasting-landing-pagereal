@@ -27,6 +27,7 @@ export default function Dashboard() {
       if (storedForecast) {
         try {
           const parsed = JSON.parse(storedForecast)
+          console.log("[v0] Dashboard: restored forecast from localStorage", parsed)
           setForecast(parsed)
         } catch (error) {
           console.error("[v0] Failed to parse stored forecast:", error)
@@ -51,6 +52,7 @@ export default function Dashboard() {
   }
 
   if (!forecast || !forecast.results) {
+    console.error("[v0] Dashboard: no forecast or missing results", forecast)
     return (
       <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-background to-muted">
         <div className="absolute right-6 top-6">
@@ -72,9 +74,13 @@ export default function Dashboard() {
     )
   }
 
-  const items = Object.keys(forecast.results)
+  const resultsObj = forecast.results ?? {}
+  const items = Object.keys(resultsObj)
+
+  console.log("[v0] Dashboard: items found", items)
 
   if (items.length === 0) {
+    console.error("[v0] Dashboard: no items in forecast results", forecast)
     return (
       <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-background to-muted">
         <div className="absolute right-6 top-6">
@@ -97,7 +103,9 @@ export default function Dashboard() {
   }
 
   const currentItem = selectedItem || items[0]
-  const forecastData = forecast.results[currentItem]?.forecast || []
+  const forecastData = resultsObj[currentItem]?.forecast || []
+
+  console.log("[v0] Dashboard: displaying forecast for", currentItem, "rows:", forecastData.length)
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background to-muted p-8">
