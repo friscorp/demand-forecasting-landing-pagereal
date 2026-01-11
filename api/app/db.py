@@ -1,68 +1,30 @@
-"""Database connection and session management."""
-from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
-from sqlalchemy.orm import sessionmaker
+from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker, AsyncSession
+from sqlalchemy.orm import declarative_base
 from app.config import get_settings
 
 settings = get_settings()
 
-DATABASE_URL = settings.database_url.replace(
-    "postgresql://", 
-    "postgresql+asyncpg://"
+Base = declarative_base()
+
+engine = create_async_engine(
+    settings.database_url,
+    echo=False,
+    pool_pre_ping=True,
 )
 
-engine = None
-async_session_maker = None
-
+SessionLocal = async_sessionmaker(
+    bind=engine,
+    expire_on_commit=False,
+    class_=AsyncSession,
+)
 
 async def init_db():
-    """Initialize database connection."""
-    global engine, async_session_maker
-    
-    try:
-        engine = create_async_engine(
-            DATABASE_URL,
-            echo=settings.debug,
-            future=True,
-            pool_pre_ping=True,
-            pool_size=5,
-            max_overflow=10,
-        )
-        
-        async_session_maker = sessionmaker(
-            engine,
-            class_=AsyncSession,
-            expire_on_commit=False,
-        )
-        
-        async with engine.begin() as conn:
-            from sqlalchemy import text
-            await conn.execute(text("SELECT 1"))
-        
-        print("✅ Database connection established")
-        
-    except Exception as e:
-        print(f"⚠️  Database connection failed: {e}")
-        print("   API will start without database connection. Check /health/db endpoint.")
-
+    # Alembic handles schema, so nothing required here.
+    return None
 
 async def close_db():
-    """Close database connection."""
-    global engine
-    if engine:
-        await engine.dispose()
-        print("🔌 Database connection closed")
+    await engine.dispose()
 
-
-async def get_db() -> AsyncSession:
-    """
-    Dependency to get database session.
-    To be used with FastAPI Depends() in route handlers.
-    """
-    if not async_session_maker:
-        raise RuntimeError("Database not initialized")
-    
-    async with async_session_maker() as session:
-        try:
-            yield session
-        finally:
-            await session.close()
+async def get_db():
+    async with SessionLocal() as session:
+        yield session

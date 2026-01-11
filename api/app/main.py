@@ -5,21 +5,24 @@ from fastapi.responses import JSONResponse
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.routers.auth import router as auth_router
 from app.config import get_settings
 from app.db import init_db, close_db, get_db
 from app.routers.forecast import router as forecast_router
+from app.routers.runs import router as runs_router
 
 settings = get_settings()
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    """Lifecycle events for the application."""
     print(f"🚀 Starting {settings.app_name} v{settings.app_version}")
-    await init_db()
+    if settings.enable_db:
+        await init_db()
     yield
     print("👋 Shutting down...")
-    await close_db()
+    if settings.enable_db:
+        await close_db()
 
 
 app = FastAPI(
@@ -38,6 +41,8 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+app.include_router(auth_router)
+app.include_router(runs_router)
 app.include_router(forecast_router)
 
 @app.get("/health")
