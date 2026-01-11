@@ -46,6 +46,36 @@ interface IngestResponse {
   upload_id: number | null
 }
 
+interface ForecastFromDBResponse {
+  mode: string
+  results: {
+    [itemName: string]: {
+      forecast: Array<{
+        ds: string
+        yhat: number
+        yhat_lower: number
+        yhat_upper: number
+      }>
+    }
+  }
+}
+
+interface SaveRunRequest {
+  business_name: string
+  mapping_json: Record<string, string>
+  forecast_json: ForecastFromDBResponse
+  insights_json: any | null
+}
+
+interface SaveRunResponse {
+  id: number
+  business_name: string
+  mapping_json: Record<string, string>
+  forecast_json: ForecastFromDBResponse
+  insights_json: any | null
+  created_at: string
+}
+
 export async function ingestCSV(file: File, mapping: Record<string, string>): Promise<IngestResponse> {
   const formData = new FormData()
   formData.append("file", file)
@@ -55,4 +85,31 @@ export async function ingestCSV(file: File, mapping: Record<string, string>): Pr
     method: "POST",
     body: formData,
   })
+}
+
+export async function generateForecastFromDB(horizonDays = 7): Promise<ForecastFromDBResponse> {
+  return apiFetch(`/forecast/from-db?horizon_days=${horizonDays}`, {
+    method: "POST",
+  })
+}
+
+export async function saveRun(data: SaveRunRequest): Promise<SaveRunResponse> {
+  return apiFetch("/runs", {
+    method: "POST",
+    body: JSON.stringify(data),
+  })
+}
+
+export async function getLatestRun(): Promise<SaveRunResponse | null> {
+  try {
+    return await apiFetch("/runs/latest", {
+      method: "GET",
+    })
+  } catch (error) {
+    // If no runs exist, return null
+    if (error instanceof Error && error.message.includes("404")) {
+      return null
+    }
+    throw error
+  }
 }

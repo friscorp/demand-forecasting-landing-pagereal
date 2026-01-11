@@ -5,13 +5,33 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { ArrowLeft, TrendingUp } from "lucide-react"
+import { ArrowLeft, TrendingUp, CheckCircle2 } from "lucide-react"
 import { useNavigate } from "react-router-dom"
 import { AuthStatus } from "@/components/auth-status"
+import { useEffect, useState } from "react"
 
 export default function Dashboard() {
-  const { forecast, selectedItem, setSelectedItem } = useForecast()
+  const { forecast, selectedItem, setSelectedItem, setForecast } = useForecast()
   const navigate = useNavigate()
+  const [isSynced, setIsSynced] = useState(false)
+
+  useEffect(() => {
+    if (!forecast) {
+      const storedForecast = localStorage.getItem("dn_forecast_json")
+      if (storedForecast) {
+        try {
+          const parsed = JSON.parse(storedForecast)
+          setForecast(parsed)
+        } catch (error) {
+          console.error("[v0] Failed to parse stored forecast:", error)
+        }
+      }
+    }
+
+    // Check if we have a saved run ID (indicates data is synced)
+    const runId = localStorage.getItem("dn_latest_run_id")
+    setIsSynced(!!runId)
+  }, [forecast, setForecast])
 
   if (!forecast || !forecast.results) {
     return (
@@ -73,10 +93,16 @@ export default function Dashboard() {
           <Button variant="ghost" size="icon" onClick={() => navigate("/")}>
             <ArrowLeft className="h-5 w-5" />
           </Button>
-          <div>
+          <div className="flex-1">
             <h1 className="text-3xl font-bold text-secondary">Demand Forecast Dashboard</h1>
             <p className="text-muted-foreground">AI-powered demand predictions for the next 7 days</p>
           </div>
+          {isSynced && (
+            <div className="flex items-center gap-2 rounded-full bg-green-50 px-4 py-2 text-sm font-medium text-green-700">
+              <CheckCircle2 className="h-4 w-4" />
+              Synced
+            </div>
+          )}
         </div>
 
         <Card>

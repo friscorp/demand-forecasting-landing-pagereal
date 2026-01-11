@@ -5,22 +5,66 @@ import type React from "react"
 import { useState } from "react"
 import { useNavigate } from "react-router-dom"
 import { useOnboarding } from "@/lib/onboarding-context"
+import { useForecast } from "@/lib/forecast-context"
+import { useAuth } from "@/lib/auth-context"
 import { ArrowRight, BarChart3 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { AuthStatus } from "@/components/auth-status"
+import { AuthModal } from "@/components/auth-modal"
+import { getLatestRun } from "@/lib/api-client"
 import heroBackground from "@/assets/hero-background.jpg"
 
 const HeroSection = () => {
   const [businessName, setBusinessName] = useState("")
+  const [isLoadingRun, setIsLoadingRun] = useState(false)
+  const [showAuthModal, setShowAuthModal] = useState(false)
   const navigate = useNavigate()
   const { updateData } = useOnboarding()
+  const { setForecast } = useForecast()
+  const { user } = useAuth()
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
     if (businessName.trim()) {
       updateData({ businessName: businessName.trim() })
       navigate("/onboarding")
+    }
+  }
+
+  const handleGoToDashboard = async () => {
+    if (!user) {
+      setShowAuthModal(true)
+      return
+    }
+
+    setIsLoadingRun(true)
+
+    try {
+      const latestRun = await getLatestRun()
+
+      if (!latestRun) {
+        // No saved runs - show message or redirect to onboarding
+        alert("No saved runs yet — upload a CSV to get started")
+        navigate("/onboarding")
+        return
+      }
+
+      // Populate dashboard state from latest run
+      localStorage.setItem("dn_forecast_json", JSON.stringify(latestRun.forecast_json))
+      localStorage.setItem("dn_mapping_json", JSON.stringify(latestRun.mapping_json))
+      localStorage.setItem("dn_latest_run_id", String(latestRun.id))
+
+      setForecast(latestRun.forecast_json)
+      updateData({ businessName: latestRun.business_name })
+
+      // Navigate to dashboard
+      navigate("/dashboard")
+    } catch (error) {
+      console.error("[v0] Failed to load latest run:", error)
+      alert("Failed to load your dashboard. Please try again.")
+    } finally {
+      setIsLoadingRun(false)
     }
   }
 
@@ -85,9 +129,24 @@ const HeroSection = () => {
                 </Button>
               </div>
             </form>
+
+            {user && (
+              <div className="mt-4">
+                <Button
+                  variant="outline"
+                  onClick={handleGoToDashboard}
+                  disabled={isLoadingRun}
+                  className="bg-card hover:bg-card/90"
+                >
+                  {isLoadingRun ? "Loading..." : "Go to Dashboard"}
+                </Button>
+              </div>
+            )}
           </div>
         </div>
       </div>
+
+      {showAuthModal && <AuthModal isOpen={showAuthModal} onClose={() => setShowAuthModal(false)} />}
     </section>
   )
 }
