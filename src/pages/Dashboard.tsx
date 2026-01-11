@@ -7,6 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { ArrowLeft, TrendingUp } from "lucide-react"
 import { useNavigate } from "react-router-dom"
+import { AuthStatus } from "@/components/auth-status"
 
 export default function Dashboard() {
   const { forecast, selectedItem, setSelectedItem } = useForecast()
@@ -15,6 +16,9 @@ export default function Dashboard() {
   if (!forecast || !forecast.results) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-background to-muted">
+        <div className="absolute right-6 top-6">
+          <AuthStatus />
+        </div>
         <Card className="w-full max-w-md">
           <CardHeader className="text-center">
             <TrendingUp className="mx-auto mb-4 h-12 w-12 text-primary" />
@@ -36,6 +40,9 @@ export default function Dashboard() {
   if (items.length === 0) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-background to-muted">
+        <div className="absolute right-6 top-6">
+          <AuthStatus />
+        </div>
         <Card className="w-full max-w-md">
           <CardHeader className="text-center">
             <TrendingUp className="mx-auto mb-4 h-12 w-12 text-primary" />
@@ -57,6 +64,10 @@ export default function Dashboard() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background to-muted p-8">
+      <div className="absolute right-6 top-6">
+        <AuthStatus />
+      </div>
+
       <div className="mx-auto max-w-6xl space-y-6">
         <div className="flex items-center gap-4">
           <Button variant="ghost" size="icon" onClick={() => navigate("/")}>

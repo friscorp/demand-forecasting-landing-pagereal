@@ -8,6 +8,7 @@ import { useOnboarding } from "@/lib/onboarding-context"
 import { ArrowRight, BarChart3 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
+import { AuthStatus } from "@/components/auth-status"
 import heroBackground from "@/assets/hero-background.jpg"
 
 const HeroSection = () => {
@@ -31,6 +32,11 @@ const HeroSection = () => {
         style={{ backgroundImage: `url(${heroBackground})` }}
       >
         <div className="absolute inset-0 bg-gradient-to-r from-background/95 via-background/70 to-transparent" />
+      </div>
+
+      {/* Auth Status */}
+      <div className="absolute right-6 top-6 z-20">
+        <AuthStatus />
       </div>
 
       {/* Content */}
