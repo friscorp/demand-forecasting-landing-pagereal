@@ -16,6 +16,7 @@ class Settings(BaseSettings):
     cors_origins: list[str] = ["http://localhost:8080", "http://localhost:5173", "https://v0-demand-forecasting-landing-page.vercel.app"]
     
     database_url: str = "postgresql://postgres:postgres@localhost:5432/demand_navigator"
+    firebase_service_account_path: str
 
     jwt_secret: str
     jwt_expires_minutes: int = 60 * 24 * 7  # default 7 days
