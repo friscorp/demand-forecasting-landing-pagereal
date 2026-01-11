@@ -4,10 +4,6 @@ import { useOnboarding } from "@/lib/onboarding-context"
 import { Label } from "@/components/ui/label"
 import { Input } from "@/components/ui/input"
 import { Switch } from "@/components/ui/switch"
-import { Button } from "@/components/ui/button"
-import { Calendar } from "@/components/ui/calendar"
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
-import { CalendarIcon, X } from "lucide-react"
 import { format } from "date-fns"
 import { useState } from "react"
 
@@ -78,36 +74,10 @@ export function StepHours() {
         </div>
       </div>
 
-      <div>
-        <Label className="mb-4 block">Additional Closed Dates</Label>
-        <div className="flex gap-2">
-          <Popover>
-            <PopoverTrigger asChild>
-              <Button variant="outline" className="gap-2 bg-transparent">
-                <CalendarIcon className="h-4 w-4" />
-                {selectedDate ? format(selectedDate, "PPP") : "Pick a date"}
-              </Button>
-            </PopoverTrigger>
-            <PopoverContent className="w-auto p-0">
-              <Calendar mode="single" selected={selectedDate} onSelect={setSelectedDate} />
-            </PopoverContent>
-          </Popover>
-          <Button onClick={addClosedDate} disabled={!selectedDate}>
-            Add Date
-          </Button>
-        </div>
-        {data.closedDates.length > 0 && (
-          <div className="mt-4 flex flex-wrap gap-2">
-            {data.closedDates.map((date) => (
-              <div key={date} className="flex items-center gap-2 rounded-full bg-muted px-3 py-1 text-sm">
-                {format(new Date(date), "MMM dd, yyyy")}
-                <button onClick={() => removeClosedDate(date)}>
-                  <X className="h-3 w-3" />
-                </button>
-              </div>
-            ))}
-          </div>
-        )}
+      <div className="rounded-lg border border-primary/20 bg-primary/5 p-4">
+        <p className="text-sm text-muted-foreground">
+          💡 You'll be able to add specific closed dates (holidays, closures) in the Events Calendar on a later step.
+        </p>
       </div>
     </div>
   )

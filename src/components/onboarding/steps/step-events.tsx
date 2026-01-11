@@ -21,11 +21,16 @@ export function StepEvents() {
 
   const addEvent = () => {
     if (newEvent.date && newEvent.description) {
+      const year = newEvent.date.getFullYear()
+      const month = String(newEvent.date.getMonth() + 1).padStart(2, "0")
+      const day = String(newEvent.date.getDate()).padStart(2, "0")
+      const dateStr = `${year}-${month}-${day}`
+
       updateData({
         events: [
           ...data.events,
           {
-            date: format(newEvent.date, "yyyy-MM-dd"),
+            date: dateStr,
             type: newEvent.type,
             description: newEvent.description,
           },
@@ -43,6 +48,11 @@ export function StepEvents() {
     updateData({
       events: data.events.filter((_, i) => i !== index),
     })
+  }
+
+  const parseDate = (dateStr: string) => {
+    const [year, month, day] = dateStr.split("-").map(Number)
+    return new Date(year, month - 1, day)
   }
 
   return (
@@ -111,7 +121,7 @@ export function StepEvents() {
                 <div>
                   <p className="font-medium text-secondary">{event.description}</p>
                   <p className="text-sm text-muted-foreground">
-                    {format(new Date(event.date), "MMM dd, yyyy")} • <span className="capitalize">{event.type}</span>
+                    {format(parseDate(event.date), "MMM dd, yyyy")} • <span className="capitalize">{event.type}</span>
                   </p>
                 </div>
                 <Button variant="ghost" size="icon" onClick={() => removeEvent(index)}>
