@@ -41,6 +41,54 @@ export function OnboardingWizard() {
 
   const [isForecastingDB, setIsForecastingDB] = useState(false)
   const [forecastError, setForecastError] = useState<string | null>(null)
+  const [lastForecastResponse, setLastForecastResponse] = useState<any | null>(null)
+  const [isRetryingSave, setIsRetryingSave] = useState(false)
+
+  const handleRetrySave = async () => {
+    if (!lastForecastResponse) return
+
+    setIsRetryingSave(true)
+    setForecastError(null)
+
+    try {
+      const mappingJson = JSON.parse(localStorage.getItem("dn_mapping_json") || "{}")
+
+      console.log("[v0] Attempting POST /runs...")
+      const runResponse = await saveRun({
+        business_name: data.businessName || "My Business",
+        mapping_json: mappingJson,
+        forecast_json: lastForecastResponse,
+        insights_json: null,
+      })
+
+      console.log("[v0] Saved run (retry):", runResponse)
+
+      const normalizedRun = {
+        id: runResponse.id,
+        business_name: runResponse.business_name,
+        mapping_json: runResponse.mapping_json,
+        forecast_json: runResponse.forecast_json,
+        insights_json: runResponse.insights_json,
+        created_at: runResponse.created_at,
+      }
+
+      localStorage.setItem("dn_latest_run_id", String(normalizedRun.id))
+      localStorage.setItem("dn_latest_run", JSON.stringify(normalizedRun))
+
+      localStorage.removeItem("onboarding-step")
+      localStorage.removeItem("onboarding-data")
+
+      navigate("/dashboard")
+    } catch (error) {
+      console.error("[v0] Retry save failed:", error)
+      if (error instanceof Error) {
+        console.error("[v0] Error message:", error.message)
+      }
+      setForecastError("Could not sync—data saved locally. Please try again.")
+    } finally {
+      setIsRetryingSave(false)
+    }
+  }
 
   const handleNext = async () => {
     if (currentStep === 3) {
@@ -120,19 +168,18 @@ export function OnboardingWizard() {
       setForecastError(null)
 
       try {
-        // Phase 3: Generate forecast from DB
         const forecastResponse = await generateForecastFromDB(7)
         console.log("[v0] Forecast from DB:", forecastResponse)
 
-        // Store in localStorage
-        localStorage.setItem("dn_forecast_json", JSON.stringify(forecastResponse))
+        setLastForecastResponse(forecastResponse)
 
-        // Store in context
+        localStorage.setItem("dn_forecast_json", JSON.stringify(forecastResponse))
         setForecast(forecastResponse)
 
         try {
           const mappingJson = JSON.parse(localStorage.getItem("dn_mapping_json") || "{}")
 
+          console.log("[v0] Attempting POST /runs...")
           const runResponse = await saveRun({
             business_name: data.businessName || "My Business",
             mapping_json: mappingJson,
@@ -140,7 +187,7 @@ export function OnboardingWizard() {
             insights_json: null,
           })
 
-          console.log("[v0] Saved run:", runResponse)
+          console.log("[v0] POST /runs success:", runResponse)
 
           const normalizedRun = {
             id: runResponse.id,
@@ -157,12 +204,15 @@ export function OnboardingWizard() {
           localStorage.removeItem("onboarding-step")
           localStorage.removeItem("onboarding-data")
         } catch (saveError) {
-          console.error("[v0] Failed to save run:", saveError)
-          setForecastError("Could not sync—data saved locally")
-          // Don't block navigation if save fails
+          console.error("[v0] POST /runs failed:", saveError)
+          if (saveError instanceof Error) {
+            console.error("[v0] Error message:", saveError.message)
+          }
+          setForecastError("Could not sync forecast. Retry?")
+          setIsForecastingDB(false)
+          return
         }
 
-        // Navigate to dashboard
         navigate("/dashboard")
       } catch (error) {
         console.error("[v0] Forecast error:", error)
@@ -231,7 +281,20 @@ export function OnboardingWizard() {
       )}
 
       {currentStep === 6 && forecastError && (
-        <div className="mb-4 rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-800">{forecastError}</div>
+        <div className="mb-4 rounded-lg border border-red-200 bg-red-50 p-4">
+          <p className="mb-2 text-sm text-red-800">{forecastError}</p>
+          {forecastError.includes("Could not sync") && (
+            <Button
+              onClick={handleRetrySave}
+              disabled={isRetryingSave}
+              size="sm"
+              variant="outline"
+              className="bg-white"
+            >
+              {isRetryingSave ? "Retrying..." : "Retry Sync"}
+            </Button>
+          )}
+        </div>
       )}
 
       {/* Navigation */}

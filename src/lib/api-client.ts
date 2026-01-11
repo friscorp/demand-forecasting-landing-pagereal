@@ -94,17 +94,37 @@ export async function generateForecastFromDB(horizonDays = 7): Promise<ForecastF
 }
 
 export async function saveRun(data: SaveRunRequest): Promise<SaveRunResponse> {
-  return apiFetch("/runs", {
-    method: "POST",
-    body: JSON.stringify(data),
+  console.log("[v0] POST /runs request:", {
+    business_name: data.business_name,
+    mapping_json: data.mapping_json,
+    forecast_json_keys: data.forecast_json ? Object.keys(data.forecast_json) : null,
   })
+
+  try {
+    const response = await apiFetch("/runs", {
+      method: "POST",
+      body: JSON.stringify(data),
+    })
+
+    console.log("[v0] POST /runs response:", response)
+    return response
+  } catch (error) {
+    console.error("[v0] POST /runs error:", error)
+    if (error instanceof Error) {
+      console.error("[v0] POST /runs error message:", error.message)
+    }
+    throw error
+  }
 }
 
 export async function getLatestRun(): Promise<SaveRunResponse | null> {
   try {
+    console.log("[v0] GET /runs/latest request...")
     const run = await apiFetch("/runs/latest", {
       method: "GET",
     })
+
+    console.log("[v0] GET /runs/latest raw response:", run)
 
     const normalized = {
       id: run.id,
@@ -115,16 +135,17 @@ export async function getLatestRun(): Promise<SaveRunResponse | null> {
       created_at: run.created_at ?? run.createdAt,
     }
 
-    console.log("[v0] Latest run fetched:", normalized)
+    console.log("[v0] GET /runs/latest normalized:", normalized)
 
     if (!normalized.forecast_json) {
-      console.error("[v0] Latest run missing forecast_json", run)
+      console.error("[v0] Latest run missing forecast_json!", run)
     }
 
     return normalized
   } catch (error) {
-    // If no runs exist, return null
+    console.log("[v0] GET /runs/latest error:", error)
     if (error instanceof Error && error.message.includes("404")) {
+      console.log("[v0] No runs exist for this user (404)")
       return null
     }
     throw error
