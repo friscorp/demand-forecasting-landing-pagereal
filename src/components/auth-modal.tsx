@@ -3,7 +3,7 @@
 import type React from "react"
 
 import { useState } from "react"
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -14,9 +14,11 @@ import { toast } from "sonner"
 interface AuthModalProps {
   open: boolean
   onOpenChange: (open: boolean) => void
+  onAuthSuccess?: () => void
+  message?: string
 }
 
-export function AuthModal({ open, onOpenChange }: AuthModalProps) {
+export function AuthModal({ open, onOpenChange, onAuthSuccess, message }: AuthModalProps) {
   const { signUp, signIn } = useAuth()
   const [loading, setLoading] = useState(false)
   const [signUpEmail, setSignUpEmail] = useState("")
@@ -31,6 +33,7 @@ export function AuthModal({ open, onOpenChange }: AuthModalProps) {
       await signUp(signUpEmail, signUpPassword)
       toast.success("Account created successfully!")
       onOpenChange(false)
+      onAuthSuccess?.()
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Failed to sign up")
     } finally {
@@ -45,6 +48,7 @@ export function AuthModal({ open, onOpenChange }: AuthModalProps) {
       await signIn(signInEmail, signInPassword)
       toast.success("Signed in successfully!")
       onOpenChange(false)
+      onAuthSuccess?.()
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Failed to sign in")
     } finally {
@@ -56,7 +60,8 @@ export function AuthModal({ open, onOpenChange }: AuthModalProps) {
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>Authentication</DialogTitle>
+          <DialogTitle>Authentication Required</DialogTitle>
+          {message && <DialogDescription className="text-base">{message}</DialogDescription>}
         </DialogHeader>
         <Tabs defaultValue="signin">
           <TabsList className="grid w-full grid-cols-2">
