@@ -8,6 +8,11 @@ from app.models.user import User  # adjust if your path differs
 from app.auth.security import hash_password, verify_password, create_access_token
 from app.auth.deps import get_current_user
 from app.schemas.auth import SignupRequest, LoginRequest, AuthResponse, MeResponse
+from app.services.business_service import get_or_create_business
+
+# after user is committed/refreshed:
+
+
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
@@ -25,6 +30,7 @@ async def signup(payload: SignupRequest, db: AsyncSession = Depends(get_db)):
     db.add(user)
     await db.commit()
     await db.refresh(user)
+    await get_or_create_business(db, user.id, payload.business_name)
 
     settings = get_settings()
     token = create_access_token(

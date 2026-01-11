@@ -10,6 +10,9 @@ from app.config import get_settings
 from app.db import init_db, close_db, get_db
 from app.routers.forecast import router as forecast_router
 from app.routers.runs import router as runs_router
+from app.routers.ingest import router as ingest_router
+from app.routers.forecast_from_db import router as forecast_db_router
+
 
 settings = get_settings()
 
@@ -41,9 +44,11 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+app.include_router(ingest_router)
 app.include_router(auth_router)
 app.include_router(runs_router)
 app.include_router(forecast_router)
+app.include_router(forecast_db_router)
 
 @app.get("/health")
 async def health():
