@@ -1,4 +1,3 @@
-// API client with automatic Firebase token attachment
 const API_URL = import.meta.env.VITE_API_URL || "http://127.0.0.1:8000"
 
 export async function apiFetch(path: string, options: RequestInit = {}) {
@@ -13,7 +12,7 @@ export async function apiFetch(path: string, options: RequestInit = {}) {
     headers["Authorization"] = `Bearer ${token}`
   }
 
-  // Set JSON headers if body is JSON
+  // Set JSON headers if body is JSON (but not FormData)
   if (options.body && typeof options.body === "string") {
     headers["Content-Type"] = "application/json"
   }
@@ -38,4 +37,22 @@ export async function apiFetch(path: string, options: RequestInit = {}) {
     }
     throw error
   }
+}
+
+interface IngestResponse {
+  business_id: number
+  file_hash: string
+  rows_inserted: number
+  upload_id: number | null
+}
+
+export async function ingestCSV(file: File, mapping: Record<string, string>): Promise<IngestResponse> {
+  const formData = new FormData()
+  formData.append("file", file)
+  formData.append("mapping", JSON.stringify(mapping))
+
+  return apiFetch("/ingest", {
+    method: "POST",
+    body: formData,
+  })
 }

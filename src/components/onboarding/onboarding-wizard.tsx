@@ -1,6 +1,7 @@
 "use client"
 
 import { useOnboarding } from "@/lib/onboarding-context"
+import { useAuth } from "@/lib/auth-context"
 import { Button } from "@/components/ui/button"
 import { ChevronLeft, ChevronRight } from "lucide-react"
 import { StepBusinessDetails } from "./steps/step-business-details"
@@ -10,6 +11,9 @@ import { StepUploadCSV } from "./steps/step-upload-csv"
 import { StepEvents } from "./steps/step-events"
 import { StepRecipeMapping } from "./steps/step-recipe-mapping"
 import { StepGenerateForecast } from "./steps/step-generate-forecast"
+import { ingestCSV } from "@/lib/api-client"
+import { useState } from "react"
+import { AuthModal } from "@/components/auth-modal"
 
 const steps = [
   { title: "Business Details", component: StepBusinessDetails },
@@ -23,9 +27,81 @@ const steps = [
 
 export function OnboardingWizard() {
   const { currentStep, setCurrentStep, data } = useOnboarding()
+  const { user } = useAuth()
   const CurrentStepComponent = steps[currentStep].component
 
-  const handleNext = () => {
+  const [isIngesting, setIsIngesting] = useState(false)
+  const [ingestError, setIngestError] = useState<string | null>(null)
+  const [ingestSuccess, setIngestSuccess] = useState<string | null>(null)
+  const [showAuthModal, setShowAuthModal] = useState(false)
+
+  const handleNext = async () => {
+    if (currentStep === 3) {
+      // Check if user is logged in
+      if (!user) {
+        setShowAuthModal(true)
+        return
+      }
+
+      // Validate CSV file and mapping
+      if (!data.csvFile) {
+        setIngestError("Please upload a CSV file")
+        return
+      }
+
+      if (!data.csvColumns?.date || !data.csvColumns?.item || !data.csvColumns?.quantity) {
+        setIngestError("Please map all required columns (date, item, quantity)")
+        return
+      }
+
+      // Ingest CSV
+      setIsIngesting(true)
+      setIngestError(null)
+      setIngestSuccess(null)
+
+      try {
+        const mapping = {
+          date: data.csvColumns.date,
+          item: data.csvColumns.item,
+          quantity: data.csvColumns.quantity,
+        }
+
+        const response = await ingestCSV(data.csvFile, mapping)
+
+        // Store to localStorage
+        localStorage.setItem("dn_mapping_json", JSON.stringify(mapping))
+        localStorage.setItem(
+          "dn_ingest_meta",
+          JSON.stringify({
+            business_id: response.business_id,
+            file_hash: response.file_hash,
+            rows_inserted: response.rows_inserted,
+            deduped: response.upload_id === null,
+          }),
+        )
+
+        // Show success message
+        if (response.rows_inserted > 0) {
+          setIngestSuccess(`Successfully ingested ${response.rows_inserted} rows`)
+        } else if (response.upload_id === null) {
+          setIngestSuccess("Already uploaded; using existing data")
+        }
+
+        // Move to next step after a brief delay
+        setTimeout(() => {
+          setCurrentStep(currentStep + 1)
+          setIngestSuccess(null)
+        }, 1500)
+      } catch (error) {
+        setIngestError(error instanceof Error ? error.message : "Failed to ingest CSV. Please try again.")
+      } finally {
+        setIsIngesting(false)
+      }
+
+      return
+    }
+
+    // Normal navigation for other steps
     if (currentStep < steps.length - 1) {
       setCurrentStep(currentStep + 1)
     }
@@ -34,6 +110,8 @@ export function OnboardingWizard() {
   const handleBack = () => {
     if (currentStep > 0) {
       setCurrentStep(currentStep - 1)
+      setIngestError(null)
+      setIngestSuccess(null)
     }
   }
 
@@ -63,17 +141,39 @@ export function OnboardingWizard() {
         <CurrentStepComponent />
       </div>
 
+      {currentStep === 3 && (
+        <>
+          {ingestError && (
+            <div className="mb-4 rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-800">
+              {ingestError}
+            </div>
+          )}
+          {ingestSuccess && (
+            <div className="mb-4 rounded-lg border border-green-200 bg-green-50 p-4 text-sm text-green-800">
+              {ingestSuccess}
+            </div>
+          )}
+        </>
+      )}
+
       {/* Navigation */}
       <div className="flex items-center justify-between">
-        <Button variant="outline" onClick={handleBack} disabled={currentStep === 0} className="gap-2 bg-transparent">
+        <Button
+          variant="outline"
+          onClick={handleBack}
+          disabled={currentStep === 0 || isIngesting}
+          className="gap-2 bg-transparent"
+        >
           <ChevronLeft className="h-4 w-4" />
           Back
         </Button>
-        <Button onClick={handleNext} className="gap-2">
-          {currentStep === steps.length - 1 ? "Finish" : "Continue"}
-          <ChevronRight className="h-4 w-4" />
+        <Button onClick={handleNext} disabled={isIngesting} className="gap-2">
+          {isIngesting ? "Uploading..." : currentStep === steps.length - 1 ? "Finish" : "Continue"}
+          {!isIngesting && <ChevronRight className="h-4 w-4" />}
         </Button>
       </div>
+
+      {showAuthModal && <AuthModal isOpen={showAuthModal} onClose={() => setShowAuthModal(false)} />}
     </div>
   )
 }
