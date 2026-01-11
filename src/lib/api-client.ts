@@ -88,9 +88,15 @@ export async function ingestCSV(file: File, mapping: Record<string, string>): Pr
 }
 
 export async function generateForecastFromDB(horizonDays = 7): Promise<ForecastFromDBResponse> {
-  return apiFetch(`/forecast/from-db?horizon_days=${horizonDays}`, {
+  const url = `/forecast/from-db?horizon_days=${horizonDays}`
+  console.log("[v0] Calling forecast endpoint:", url)
+
+  const response = await apiFetch(url, {
     method: "POST",
   })
+
+  console.log("[v0] Forecast response received:", response)
+  return response
 }
 
 export async function saveRun(data: SaveRunRequest): Promise<SaveRunResponse> {
