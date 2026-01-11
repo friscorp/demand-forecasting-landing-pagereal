@@ -47,13 +47,20 @@ export function OnboardingWizard() {
   const handleRetrySave = async () => {
     if (!lastForecastResponse) return
 
+    if (!lastForecastResponse.results) {
+      console.error("[v0] Cannot retry save - forecast missing .results:", lastForecastResponse)
+      setForecastError("Cannot save - invalid forecast data")
+      return
+    }
+
     setIsRetryingSave(true)
     setForecastError(null)
 
     try {
       const mappingJson = JSON.parse(localStorage.getItem("dn_mapping_json") || "{}")
 
-      console.log("[v0] Attempting POST /runs...")
+      console.log("[v0] Retry: About to POST /runs with forecast.results:", Object.keys(lastForecastResponse.results))
+
       const runResponse = await saveRun({
         business_name: data.businessName || "My Business",
         mapping_json: mappingJson,
@@ -169,8 +176,19 @@ export function OnboardingWizard() {
 
       try {
         const forecastResponse = await generateForecastFromDB(7)
-        console.log("[v0] Forecast from DB:", forecastResponse)
+        console.log("[v0] Raw forecast response from API:", forecastResponse)
+        console.log("[v0] Forecast response type:", typeof forecastResponse)
+        console.log("[v0] Forecast response keys:", forecastResponse ? Object.keys(forecastResponse) : null)
 
+        // Validate that we have the correct forecast structure
+        if (!forecastResponse || !forecastResponse.results) {
+          console.error("[v0] Invalid forecast response - missing .results field:", forecastResponse)
+          setForecastError("Forecast generation failed (invalid response). Expected {mode, results}.")
+          setIsForecastingDB(false)
+          return
+        }
+
+        console.log("[v0] ✓ Forecast validation passed. Results items:", Object.keys(forecastResponse.results))
         setLastForecastResponse(forecastResponse)
 
         localStorage.setItem("dn_forecast_json", JSON.stringify(forecastResponse))
@@ -179,15 +197,30 @@ export function OnboardingWizard() {
         try {
           const mappingJson = JSON.parse(localStorage.getItem("dn_mapping_json") || "{}")
 
-          console.log("[v0] Attempting POST /runs...")
-          const runResponse = await saveRun({
+          const runPayload = {
             business_name: data.businessName || "My Business",
             mapping_json: mappingJson,
             forecast_json: forecastResponse,
             insights_json: null,
-          })
+          }
+
+          console.log("[v0] About to POST /runs with payload:")
+          console.log("[v0]   business_name:", runPayload.business_name)
+          console.log("[v0]   mapping_json:", runPayload.mapping_json)
+          console.log("[v0]   forecast_json type:", typeof runPayload.forecast_json)
+          console.log("[v0]   forecast_json.mode:", runPayload.forecast_json?.mode)
+          console.log(
+            "[v0]   forecast_json.results keys:",
+            runPayload.forecast_json?.results ? Object.keys(runPayload.forecast_json.results) : null,
+          )
+
+          const runResponse = await saveRun(runPayload)
 
           console.log("[v0] POST /runs success:", runResponse)
+          console.log(
+            "[v0] Saved run forecast_json.results:",
+            runResponse.forecast_json?.results ? Object.keys(runResponse.forecast_json.results) : null,
+          )
 
           const normalizedRun = {
             id: runResponse.id,
@@ -203,6 +236,8 @@ export function OnboardingWizard() {
 
           localStorage.removeItem("onboarding-step")
           localStorage.removeItem("onboarding-data")
+
+          navigate("/dashboard")
         } catch (saveError) {
           console.error("[v0] POST /runs failed:", saveError)
           if (saveError instanceof Error) {
