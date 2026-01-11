@@ -122,7 +122,6 @@ export function OnboardingWizard() {
         // Store in context
         setForecast(forecastResponse)
 
-        // Phase 4: Save run to database
         try {
           const mappingJson = JSON.parse(localStorage.getItem("dn_mapping_json") || "{}")
 
@@ -134,9 +133,13 @@ export function OnboardingWizard() {
           })
 
           console.log("[v0] Saved run:", runResponse)
+
+          // Store both run ID and full run object
           localStorage.setItem("dn_latest_run_id", String(runResponse.id))
+          localStorage.setItem("dn_latest_run", JSON.stringify(runResponse))
         } catch (saveError) {
           console.error("[v0] Failed to save run:", saveError)
+          setForecastError("Could not sync to database—data saved locally. You can retry later.")
           // Don't block navigation if save fails
         }
 

@@ -41,11 +41,23 @@ const HeroSection = () => {
     setIsLoadingRun(true)
 
     try {
-      const latestRun = await getLatestRun()
+      let latestRun = null
+
+      try {
+        latestRun = await getLatestRun()
+      } catch (apiError) {
+        console.warn("[v0] API failed, trying localStorage fallback:", apiError)
+
+        // Fallback to localStorage
+        const storedRun = localStorage.getItem("dn_latest_run")
+        if (storedRun) {
+          latestRun = JSON.parse(storedRun)
+        }
+      }
 
       if (!latestRun) {
         // No saved runs - show message or redirect to onboarding
-        alert("No saved runs yet — upload a CSV to get started")
+        alert("No saved forecasts yet—upload a CSV to get started")
         navigate("/onboarding")
         return
       }
@@ -54,6 +66,7 @@ const HeroSection = () => {
       localStorage.setItem("dn_forecast_json", JSON.stringify(latestRun.forecast_json))
       localStorage.setItem("dn_mapping_json", JSON.stringify(latestRun.mapping_json))
       localStorage.setItem("dn_latest_run_id", String(latestRun.id))
+      localStorage.setItem("dn_latest_run", JSON.stringify(latestRun))
 
       setForecast(latestRun.forecast_json)
       updateData({ businessName: latestRun.business_name })

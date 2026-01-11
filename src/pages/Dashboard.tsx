@@ -28,7 +28,7 @@ export default function Dashboard() {
       }
     }
 
-    // Check if we have a saved run ID (indicates data is synced)
+    // Check if we have a saved run ID (indicates data is synced to database)
     const runId = localStorage.getItem("dn_latest_run_id")
     setIsSynced(!!runId)
   }, [forecast, setForecast])
