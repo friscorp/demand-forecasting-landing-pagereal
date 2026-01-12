@@ -9,6 +9,7 @@ def init_firebase():
     if _app:
         return _app
     settings = get_settings()
+    print("FIREBASE_SERVICE_ACCOUNT_PATH =", settings.firebase_service_account_path)
     cred = credentials.Certificate(settings.firebase_service_account_path)
     _app = firebase_admin.initialize_app(cred)
     return _app

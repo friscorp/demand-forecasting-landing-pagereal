@@ -4,7 +4,8 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
-
+import uuid
+from fastapi import Request
 from app.routers.auth import router as auth_router
 from app.config import get_settings
 from app.db import init_db, close_db, get_db
@@ -43,6 +44,8 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+print("CORS ORIGINS:", settings.cors_origins)
+
 
 app.include_router(ingest_router)
 app.include_router(auth_router)
@@ -77,6 +80,16 @@ async def health_db(db: AsyncSession = Depends(get_db)):
             "database": "error",
             "error": str(e)
         }
+
+
+
+@app.middleware("http")
+async def log_requests(request: Request, call_next):
+    rid = uuid.uuid4().hex[:8]
+    print(f"[{rid}] -> {request.method} {request.url.path}")
+    response = await call_next(request)
+    print(f"[{rid}] <- {response.status_code} {request.url.path}")
+    return response
 
 
 @app.get("/")
