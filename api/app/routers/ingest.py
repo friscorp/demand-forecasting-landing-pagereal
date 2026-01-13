@@ -27,9 +27,6 @@ async def ingest_csv(
 ):
     # 1) Ensure business exists
     biz = await get_or_create_business(db, current_user.id)
-    print("INGEST -> user.id:", current_user.id, "firebase_uid:", current_user.firebase_uid)
-    print("INGEST -> business.id:", biz.id)
-
 
     # 2) Read bytes + compute sha256
     raw = await file.read()

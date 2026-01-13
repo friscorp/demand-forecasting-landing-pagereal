@@ -4,7 +4,7 @@ import io
 import csv
 from datetime import date, datetime, timedelta
 from typing import Any, Dict, List, Optional
-from app.services.forecasting import run_forecast_from_dataframe
+
 from fastapi import APIRouter, File, Form, UploadFile, HTTPException
 
 router = APIRouter(prefix="/forecast", tags=["forecast"])
@@ -111,7 +111,4 @@ async def forecast(
             "forecast": forecast_list,
         }
 
-    # ... you already built `results` above ...
-
     return {"mode": "per_product", "results": results}
-

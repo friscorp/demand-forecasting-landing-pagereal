@@ -10,7 +10,7 @@ import { useNavigate } from "react-router-dom"
 import { AuthStatus } from "@/components/auth-status"
 import { useEffect, useState } from "react"
 import { useAuth } from "@/lib/auth-context"
-import { getLatestRun } from "@/lib/api-client"
+import { latestRun } from "@/lib/api"
 
 export default function Dashboard() {
   const { forecast, selectedItem, setSelectedItem, setForecast } = useForecast()
@@ -18,112 +18,52 @@ export default function Dashboard() {
   const navigate = useNavigate()
   const [isSynced, setIsSynced] = useState(false)
   const [isLoadingRun, setIsLoadingRun] = useState(true)
+  const [loadError, setLoadError] = useState<string | null>(null)
 
   useEffect(() => {
     const restoreLatestRun = async () => {
-      if (authLoading) {
-        return
-      }
-
-      // If we already have forecast, skip restoration
-      if (forecast) {
-        setIsLoadingRun(false)
-        const runId = localStorage.getItem("dn_latest_run_id")
-        setIsSynced(!!runId)
-        return
-      }
+      if (authLoading) return
 
       if (!user) {
-        // Not authenticated, try localStorage only
-        const storedForecast = localStorage.getItem("dn_forecast_json")
-        if (storedForecast) {
-          try {
-            const parsed = JSON.parse(storedForecast)
-            console.log("[v0] Dashboard: restored forecast from localStorage", parsed)
-            setForecast(parsed)
-          } catch (error) {
-            console.error("[v0] Failed to parse stored forecast:", error)
-          }
-        }
-        setIsLoadingRun(false)
+        console.log("[v0] Dashboard: user not authenticated, redirecting to home")
+        navigate("/")
         return
       }
 
-      // User is authenticated, try to fetch from backend
+      // If we already have forecast in context, skip restoration
+      if (forecast && forecast.results) {
+        console.log("[v0] Dashboard: forecast already in context")
+        setIsLoadingRun(false)
+        setIsSynced(true)
+        return
+      }
+
       try {
-        console.log("[v0] Dashboard: Attempting GET /runs/latest...")
-        const latestRun = await getLatestRun()
+        console.log("[v0] Dashboard: calling latestRun callable...")
+        const run = await latestRun()
 
-        if (latestRun) {
-          console.log("[v0] Dashboard: GET /runs/latest success. Raw:", latestRun)
-
-          // Normalize response
-          const normalized = {
-            id: latestRun.id,
-            businessName: latestRun.business_name,
-            mappingJson: latestRun.mapping_json,
-            forecastJson: latestRun.forecast_json,
-            insightsJson: latestRun.insights_json,
-            createdAt: latestRun.created_at,
-          }
-
-          console.log("[v0] Dashboard: Normalized run:", normalized)
-
-          if (!normalized.forecastJson) {
-            console.error("[v0] Dashboard: Latest run missing forecastJson!", latestRun)
-          }
-
-          // Store in localStorage for offline access
-          localStorage.setItem("dn_forecast_json", JSON.stringify(normalized.forecastJson))
-          localStorage.setItem("dn_mapping_json", JSON.stringify(normalized.mappingJson))
-          localStorage.setItem("dn_latest_run_id", String(normalized.id))
-          localStorage.setItem("dn_latest_run", JSON.stringify(latestRun))
-
-          // Update context
-          setForecast(normalized.forecastJson)
+        if (run && run.forecast && run.forecast.results) {
+          console.log("[v0] Dashboard: latestRun success, items:", Object.keys(run.forecast.results))
+          setForecast(run.forecast)
           setIsSynced(true)
-
-          // Clear onboarding state
-          localStorage.removeItem("onboarding-step")
-          localStorage.removeItem("onboarding-data")
-
-          console.log("[v0] Dashboard: Restored from run ID", normalized.id)
+        } else if (run) {
+          console.error("[v0] Dashboard: latestRun returned but missing forecast.results:", run)
+          setLoadError("Forecast data is invalid. Please run onboarding again.")
         } else {
-          console.log("[v0] Dashboard: No latest run found (404/empty)")
-
-          // Fallback to localStorage
-          const storedForecast = localStorage.getItem("dn_forecast_json")
-          if (storedForecast) {
-            try {
-              const parsed = JSON.parse(storedForecast)
-              console.log("[v0] Dashboard: Fallback to localStorage forecast", parsed)
-              setForecast(parsed)
-            } catch (error) {
-              console.error("[v0] Failed to parse stored forecast:", error)
-            }
-          }
+          console.log("[v0] Dashboard: no run found, redirecting to onboarding")
+          navigate("/onboarding")
+          return
         }
       } catch (error) {
-        console.error("[v0] Dashboard: GET /runs/latest failed:", error)
-
-        // Fallback to localStorage on error
-        const storedForecast = localStorage.getItem("dn_forecast_json")
-        if (storedForecast) {
-          try {
-            const parsed = JSON.parse(storedForecast)
-            console.log("[v0] Dashboard: Error fallback to localStorage", parsed)
-            setForecast(parsed)
-          } catch (parseError) {
-            console.error("[v0] Failed to parse stored forecast:", parseError)
-          }
-        }
+        console.error("[v0] Dashboard: latestRun error:", error)
+        setLoadError(error instanceof Error ? error.message : "Failed to load forecast data")
       } finally {
         setIsLoadingRun(false)
       }
     }
 
     restoreLatestRun()
-  }, [user, authLoading, forecast, setForecast])
+  }, [user, authLoading, forecast, setForecast, navigate])
 
   if (authLoading || isLoadingRun) {
     return (
@@ -132,6 +72,31 @@ export default function Dashboard() {
           <div className="mb-4 h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent mx-auto" />
           <p className="text-muted-foreground">Loading dashboard...</p>
         </div>
+      </div>
+    )
+  }
+
+  if (loadError) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-background to-muted">
+        <div className="absolute right-6 top-6">
+          <AuthStatus />
+        </div>
+        <Card className="w-full max-w-md">
+          <CardHeader className="text-center">
+            <TrendingUp className="mx-auto mb-4 h-12 w-12 text-destructive" />
+            <CardTitle>Error Loading Dashboard</CardTitle>
+            <CardDescription>{loadError}</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-2">
+            <Button onClick={() => navigate("/onboarding")} className="w-full">
+              Start Onboarding
+            </Button>
+            <Button onClick={() => window.location.reload()} variant="outline" className="w-full">
+              Retry
+            </Button>
+          </CardContent>
+        </Card>
       </div>
     )
   }
@@ -165,7 +130,6 @@ export default function Dashboard() {
   console.log("[v0] Dashboard: items found", items)
 
   if (items.length === 0) {
-    console.error("[v0] Dashboard: no items in forecast results", forecast)
     return (
       <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-background to-muted">
         <div className="absolute right-6 top-6">
@@ -189,8 +153,6 @@ export default function Dashboard() {
 
   const currentItem = selectedItem || items[0]
   const forecastData = resultsObj[currentItem]?.forecast || []
-
-  console.log("[v0] Dashboard: displaying forecast for", currentItem, "rows:", forecastData.length)
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background to-muted p-8">

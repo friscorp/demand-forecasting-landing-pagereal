@@ -12,7 +12,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { AuthStatus } from "@/components/auth-status"
 import { AuthModal } from "@/components/auth-modal"
-import { getLatestRun } from "@/lib/api-client"
+import { latestRun } from "@/lib/api"
 import heroBackground from "@/assets/hero-background.jpg"
 
 const HeroSection = () => {
@@ -34,7 +34,7 @@ const HeroSection = () => {
 
   const handleGoToDashboard = async () => {
     if (authLoading) {
-      return // Auth still loading, don't proceed yet
+      return
     }
 
     if (!user) {
@@ -45,41 +45,25 @@ const HeroSection = () => {
     setIsLoadingRun(true)
 
     try {
-      let latestRun = null
+      const run = await latestRun()
 
-      try {
-        latestRun = await getLatestRun()
-      } catch (apiError) {
-        console.warn("[v0] API failed, trying localStorage fallback:", apiError)
-
-        // Fallback to localStorage
-        const storedRun = localStorage.getItem("dn_latest_run")
-        if (storedRun) {
-          latestRun = JSON.parse(storedRun)
-        }
-      }
-
-      if (!latestRun) {
-        // No saved runs - show message or redirect to onboarding
+      if (!run) {
         alert("No saved forecasts yet—upload a CSV to get started")
         navigate("/onboarding")
         return
       }
 
-      localStorage.setItem("dn_forecast_json", JSON.stringify(latestRun.forecast_json))
-      localStorage.setItem("dn_mapping_json", JSON.stringify(latestRun.mapping_json))
-      localStorage.setItem("dn_latest_run_id", String(latestRun.id))
-      localStorage.setItem("dn_latest_run", JSON.stringify(latestRun))
+      if (!run.forecast || !run.forecast.results) {
+        console.error("[v0] HeroSection: latestRun missing forecast.results:", run)
+        alert("Forecast data is invalid. Please run onboarding again.")
+        navigate("/onboarding")
+        return
+      }
 
-      setForecast(latestRun.forecast_json)
-      updateData({ businessName: latestRun.business_name })
+      setForecast(run.forecast)
+      updateData({ businessName: run.businessName })
 
-      localStorage.removeItem("onboarding-step")
-      localStorage.removeItem("onboarding-data")
-
-      console.log("[v0] Dashboard state restored from run:", latestRun.id)
-
-      // Navigate to dashboard
+      console.log("[v0] Dashboard state restored from run:", run.id)
       navigate("/dashboard")
     } catch (error) {
       console.error("[v0] Failed to load latest run:", error)

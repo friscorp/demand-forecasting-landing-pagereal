@@ -1,6 +1,6 @@
 "use client"
 
-import { createContext, useContext, useState, useEffect, type ReactNode } from "react"
+import { createContext, useContext, useState, type ReactNode } from "react"
 
 interface OnboardingData {
   businessName: string
@@ -31,6 +31,7 @@ interface OnboardingContextType {
   updateData: (updates: Partial<OnboardingData>) => void
   currentStep: number
   setCurrentStep: (step: number) => void
+  resetOnboarding: () => void
 }
 
 const defaultData: OnboardingData = {
@@ -55,30 +56,20 @@ const defaultData: OnboardingData = {
 const OnboardingContext = createContext<OnboardingContextType | undefined>(undefined)
 
 export const OnboardingProvider = ({ children }: { children: ReactNode }) => {
-  const [data, setData] = useState<OnboardingData>(() => {
-    const saved = localStorage.getItem("onboarding-data")
-    return saved ? JSON.parse(saved) : defaultData
-  })
-
-  const [currentStep, setCurrentStep] = useState(() => {
-    const saved = localStorage.getItem("onboarding-step")
-    return saved ? Number.parseInt(saved, 10) : 0
-  })
-
-  useEffect(() => {
-    localStorage.setItem("onboarding-data", JSON.stringify(data))
-  }, [data])
-
-  useEffect(() => {
-    localStorage.setItem("onboarding-step", currentStep.toString())
-  }, [currentStep])
+  const [data, setData] = useState<OnboardingData>(defaultData)
+  const [currentStep, setCurrentStep] = useState(0)
 
   const updateData = (updates: Partial<OnboardingData>) => {
     setData((prev) => ({ ...prev, ...updates }))
   }
 
+  const resetOnboarding = () => {
+    setData(defaultData)
+    setCurrentStep(0)
+  }
+
   return (
-    <OnboardingContext.Provider value={{ data, updateData, currentStep, setCurrentStep }}>
+    <OnboardingContext.Provider value={{ data, updateData, currentStep, setCurrentStep, resetOnboarding }}>
       {children}
     </OnboardingContext.Provider>
   )

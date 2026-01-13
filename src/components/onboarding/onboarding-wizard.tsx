@@ -12,7 +12,7 @@ import { StepUploadCSV } from "./steps/step-upload-csv"
 import { StepEvents } from "./steps/step-events"
 import { StepRecipeMapping } from "./steps/step-recipe-mapping"
 import { StepGenerateForecast } from "./steps/step-generate-forecast"
-import { ingestCSV, generateForecastFromDB, saveRun } from "@/lib/api-client"
+import { ingestCsv, forecastFromDb, saveRun } from "@/lib/api"
 import { useState } from "react"
 import { AuthModal } from "@/components/auth-modal"
 import { useNavigate } from "react-router-dom"
@@ -28,7 +28,7 @@ const steps = [
 ]
 
 export function OnboardingWizard() {
-  const { currentStep, setCurrentStep, data } = useOnboarding()
+  const { currentStep, setCurrentStep, data, resetOnboarding } = useOnboarding()
   const { user, loading: authLoading } = useAuth()
   const { setForecast } = useForecast()
   const navigate = useNavigate()
@@ -37,6 +37,9 @@ export function OnboardingWizard() {
   const [isIngesting, setIsIngesting] = useState(false)
   const [ingestError, setIngestError] = useState<string | null>(null)
   const [ingestSuccess, setIngestSuccess] = useState<string | null>(null)
+  const [ingestMeta, setIngestMeta] = useState<{ businessId?: string; fileHash: string; rowsInserted: number } | null>(
+    null,
+  )
   const [showAuthModal, setShowAuthModal] = useState(false)
   const [authModalMessage, setAuthModalMessage] = useState<string>("")
   const [pendingAction, setPendingAction] = useState<"ingest" | "forecast" | null>(null)
@@ -71,28 +74,29 @@ export function OnboardingWizard() {
     setIngestSuccess(null)
 
     try {
+      const csvText = await data.csvFile.text()
+
       const mapping = {
         date: data.csvColumns.date,
         item: data.csvColumns.item,
         quantity: data.csvColumns.quantity,
       }
 
-      const response = await ingestCSV(data.csvFile, mapping)
+      const response = await ingestCsv({
+        csvText,
+        mapping,
+        businessName: data.businessName || "My Business",
+      })
 
-      localStorage.setItem("dn_mapping_json", JSON.stringify(mapping))
-      localStorage.setItem(
-        "dn_ingest_meta",
-        JSON.stringify({
-          business_id: response.business_id,
-          file_hash: response.file_hash,
-          rows_inserted: response.rows_inserted,
-          deduped: response.upload_id === null,
-        }),
-      )
+      setIngestMeta({
+        businessId: response.businessId,
+        fileHash: response.fileHash,
+        rowsInserted: response.rowsInserted,
+      })
 
-      if (response.rows_inserted > 0) {
-        setIngestSuccess(`Successfully ingested ${response.rows_inserted} rows`)
-      } else if (response.upload_id === null) {
+      if (response.rowsInserted > 0) {
+        setIngestSuccess(`Successfully ingested ${response.rowsInserted} rows`)
+      } else if (response.deduped) {
         setIngestSuccess("Already uploaded; using existing data")
       }
 
@@ -112,10 +116,8 @@ export function OnboardingWizard() {
     setForecastError(null)
 
     try {
-      const forecastResponse = await generateForecastFromDB(7)
-      console.log("[v0] Raw forecast response from API:", forecastResponse)
-      console.log("[v0] Forecast response type:", typeof forecastResponse)
-      console.log("[v0] Forecast response keys:", forecastResponse ? Object.keys(forecastResponse) : null)
+      const forecastResponse = await forecastFromDb({ horizonDays: 7 })
+      console.log("[v0] Raw forecast response from callable:", forecastResponse)
 
       if (!forecastResponse || !forecastResponse.results) {
         console.error("[v0] Invalid forecast response - missing .results field:", forecastResponse)
@@ -124,67 +126,37 @@ export function OnboardingWizard() {
         return
       }
 
-      console.log("[v0] ✓ Forecast validation passed. Results items:", Object.keys(forecastResponse.results))
+      console.log("[v0] Forecast validation passed. Results items:", Object.keys(forecastResponse.results))
       setLastForecastResponse(forecastResponse)
-
-      localStorage.setItem("dn_forecast_json", JSON.stringify(forecastResponse))
       setForecast(forecastResponse)
 
       try {
-        const mappingJson = JSON.parse(localStorage.getItem("dn_mapping_json") || "{}")
+        const mapping = data.csvColumns
+          ? {
+              date: data.csvColumns.date,
+              item: data.csvColumns.item,
+              quantity: data.csvColumns.quantity,
+            }
+          : {}
 
-        const runPayload = {
-          business_name: data.businessName || "My Business",
-          mapping_json: mappingJson,
-          forecast_json: forecastResponse,
-          insights_json: null,
-        }
+        const runResponse = await saveRun({
+          businessName: data.businessName || "My Business",
+          mapping,
+          forecast: forecastResponse,
+          insights: null,
+        })
 
-        console.log("[v0] About to POST /runs with payload:")
-        console.log("[v0]   business_name:", runPayload.business_name)
-        console.log("[v0]   mapping_json:", runPayload.mapping_json)
-        console.log("[v0]   forecast_json type:", typeof runPayload.forecast_json)
-        console.log("[v0]   forecast_json.mode:", runPayload.forecast_json?.mode)
-        console.log(
-          "[v0]   forecast_json.results keys:",
-          runPayload.forecast_json?.results ? Object.keys(runPayload.forecast_json.results) : null,
-        )
+        console.log("[v0] saveRun success:", runResponse)
 
-        const runResponse = await saveRun(runPayload)
-
-        console.log("[v0] POST /runs success:", runResponse)
-        console.log(
-          "[v0] Saved run forecast_json.results:",
-          runResponse.forecast_json?.results ? Object.keys(runResponse.forecast_json.results) : null,
-        )
-
-        const normalizedRun = {
-          id: runResponse.id,
-          business_name: runResponse.business_name,
-          mapping_json: runResponse.mapping_json,
-          forecast_json: runResponse.forecast_json,
-          insights_json: runResponse.insights_json,
-          created_at: runResponse.created_at,
-        }
-
-        localStorage.setItem("dn_latest_run_id", String(normalizedRun.id))
-        localStorage.setItem("dn_latest_run", JSON.stringify(normalizedRun))
-
-        localStorage.removeItem("onboarding-step")
-        localStorage.removeItem("onboarding-data")
+        resetOnboarding()
 
         navigate("/dashboard")
       } catch (saveError) {
-        console.error("[v0] POST /runs failed:", saveError)
-        if (saveError instanceof Error) {
-          console.error("[v0] Error message:", saveError.message)
-        }
+        console.error("[v0] saveRun failed:", saveError)
         setForecastError("Could not sync forecast. Retry?")
         setIsForecastingDB(false)
         return
       }
-
-      navigate("/dashboard")
     } catch (error) {
       console.error("[v0] Forecast error:", error)
       setForecastError(error instanceof Error ? error.message : "Failed to generate forecast. Please try again.")
@@ -206,41 +178,27 @@ export function OnboardingWizard() {
     setForecastError(null)
 
     try {
-      const mappingJson = JSON.parse(localStorage.getItem("dn_mapping_json") || "{}")
-
-      console.log("[v0] Retry: About to POST /runs with forecast.results:", Object.keys(lastForecastResponse.results))
+      const mapping = data.csvColumns
+        ? {
+            date: data.csvColumns.date,
+            item: data.csvColumns.item,
+            quantity: data.csvColumns.quantity,
+          }
+        : {}
 
       const runResponse = await saveRun({
-        business_name: data.businessName || "My Business",
-        mapping_json: mappingJson,
-        forecast_json: lastForecastResponse,
-        insights_json: null,
+        businessName: data.businessName || "My Business",
+        mapping,
+        forecast: lastForecastResponse,
+        insights: null,
       })
 
-      console.log("[v0] Saved run (retry):", runResponse)
-
-      const normalizedRun = {
-        id: runResponse.id,
-        business_name: runResponse.business_name,
-        mapping_json: runResponse.mapping_json,
-        forecast_json: runResponse.forecast_json,
-        insights_json: runResponse.insights_json,
-        created_at: runResponse.created_at,
-      }
-
-      localStorage.setItem("dn_latest_run_id", String(normalizedRun.id))
-      localStorage.setItem("dn_latest_run", JSON.stringify(normalizedRun))
-
-      localStorage.removeItem("onboarding-step")
-      localStorage.removeItem("onboarding-data")
-
+      console.log("[v0] saveRun (retry) success:", runResponse)
+      resetOnboarding()
       navigate("/dashboard")
     } catch (error) {
       console.error("[v0] Retry save failed:", error)
-      if (error instanceof Error) {
-        console.error("[v0] Error message:", error.message)
-      }
-      setForecastError("Could not sync—data saved locally. Please try again.")
+      setForecastError("Could not sync. Please try again.")
     } finally {
       setIsRetryingSave(false)
     }
@@ -248,9 +206,7 @@ export function OnboardingWizard() {
 
   const handleNext = async () => {
     if (currentStep === 3) {
-      if (authLoading) {
-        return
-      }
+      if (authLoading) return
 
       if (!user) {
         setAuthModalMessage("Please sign in or create an account to upload your data and continue.")
@@ -264,9 +220,7 @@ export function OnboardingWizard() {
     }
 
     if (currentStep === 6) {
-      if (authLoading) {
-        return
-      }
+      if (authLoading) return
 
       if (!user) {
         setAuthModalMessage("Please sign in or create an account to generate your forecast.")
@@ -279,7 +233,6 @@ export function OnboardingWizard() {
       return
     }
 
-    // Normal navigation for other steps
     if (currentStep < steps.length - 1) {
       setCurrentStep(currentStep + 1)
     }

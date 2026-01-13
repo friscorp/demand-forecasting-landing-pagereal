@@ -7,7 +7,6 @@ from app.auth.deps import get_current_user
 from app.models.forecast_run import ForecastRun
 from app.models.user import User
 from app.schemas.runs import SaveRunRequest, RunResponse
-from fastapi import HTTPException
 
 router = APIRouter(prefix="/runs", tags=["runs"])
 
@@ -17,7 +16,6 @@ async def save_run(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-
     run = ForecastRun(
         user_id=current_user.id,
         business_name=payload.business_name,
@@ -25,12 +23,8 @@ async def save_run(
         forecast_json=payload.forecast_json,
         insights_json=payload.insights_json,
     )
-    print("SAVE RUN -> user.id:", current_user.id, "firebase_uid:", current_user.firebase_uid)
-
     db.add(run)
     await db.commit()
-    print("SAVE RUN -> created run.id:", run.id)
-
     await db.refresh(run)
 
     return RunResponse(
@@ -47,8 +41,6 @@ async def latest_run(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    print("GET LATEST RUN -> user.id:", current_user.id, "firebase_uid:", current_user.firebase_uid)
-
     result = await db.execute(
         select(ForecastRun)
         .where(ForecastRun.user_id == current_user.id)
@@ -56,11 +48,16 @@ async def latest_run(
         .limit(1)
     )
     run = result.scalar_one_or_none()
-    print("GET LATEST RUN -> found run:", run.id if run else None)
-
     if not run:
         # Return something frontend can handle
-        raise HTTPException(status_code=404, detail="No runs found")
+        return RunResponse(
+            id=0,
+            business_name=None,
+            mapping_json={},
+            forecast_json={},
+            insights_json=None,
+            created_at="",
+        )
 
     return RunResponse(
         id=run.id,
