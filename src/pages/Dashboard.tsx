@@ -31,8 +31,9 @@ export default function Dashboard() {
       if (authLoading) return
 
       if (!user) {
-        console.log("[v0] Dashboard: user not authenticated, redirecting to home")
-        navigate("/")
+        console.log("[v0] Dashboard: user not authenticated")
+        setIsLoadingRun(false)
+        setIsLoadingProfile(false)
         return
       }
 
@@ -212,11 +213,11 @@ export default function Dashboard() {
             ) : (
               <div className="flex flex-col items-center justify-center py-12 text-center">
                 <TrendingUp className="mb-4 h-12 w-12 text-muted-foreground/50" />
-                <h3 className="mb-2 text-lg font-semibold text-muted-foreground">No forecast data yet</h3>
+                <h3 className="mb-2 text-lg font-semibold text-muted-foreground">No forecasting data available</h3>
                 <p className="mb-4 text-sm text-muted-foreground">
                   Complete the onboarding process to generate your first forecast
                 </p>
-                <Button onClick={() => navigate("/onboarding")}>Start Onboarding</Button>
+                <Button onClick={() => navigate("/onboarding")}>Create one</Button>
               </div>
             )}
           </CardContent>

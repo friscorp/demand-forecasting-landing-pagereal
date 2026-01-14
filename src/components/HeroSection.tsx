@@ -47,27 +47,18 @@ const HeroSection = () => {
     try {
       const run = await latestRun()
 
-      if (!run) {
-        alert("No saved forecasts yet—upload a CSV to get started")
-        navigate("/onboarding")
-        return
+      if (run && run.forecast && run.forecast.results) {
+        setForecast(run.forecast)
+        updateData({ businessName: run.businessName })
+        console.log("[v0] Dashboard state restored from run:", run.id)
+      } else {
+        console.log("[v0] No saved forecast found, showing empty dashboard")
       }
 
-      if (!run.forecast || !run.forecast.results) {
-        console.error("[v0] HeroSection: latestRun missing forecast.results:", run)
-        alert("Forecast data is invalid. Please run onboarding again.")
-        navigate("/onboarding")
-        return
-      }
-
-      setForecast(run.forecast)
-      updateData({ businessName: run.businessName })
-
-      console.log("[v0] Dashboard state restored from run:", run.id)
       navigate("/dashboard")
     } catch (error) {
       console.error("[v0] Failed to load latest run:", error)
-      alert("Failed to load your dashboard. Please try again.")
+      navigate("/dashboard")
     } finally {
       setIsLoadingRun(false)
     }
