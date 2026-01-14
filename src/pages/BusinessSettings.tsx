@@ -1,0 +1,31 @@
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Settings } from "lucide-react"
+
+export default function BusinessSettings() {
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-background to-muted p-8">
+      <div className="mx-auto max-w-6xl space-y-6">
+        <div>
+          <h1 className="text-3xl font-bold text-secondary">Business Settings</h1>
+          <p className="text-muted-foreground">Configure your business preferences</p>
+        </div>
+
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Settings className="h-5 w-5" />
+              Configuration
+            </CardTitle>
+            <CardDescription>Manage business hours, locations, and preferences</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="flex flex-col items-center justify-center py-12 text-center">
+              <Settings className="mb-4 h-12 w-12 text-muted-foreground/50" />
+              <p className="text-muted-foreground">Business settings management coming soon</p>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    </div>
+  )
+}

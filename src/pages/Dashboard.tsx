@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { ArrowLeft, TrendingUp, CheckCircle2, AlertCircle, X } from "lucide-react"
+import { ArrowLeft, TrendingUp, CheckCircle2, AlertCircle, X, TrendingDown, Package, Megaphone } from "lucide-react"
 import { useNavigate } from "react-router-dom"
 import { AuthStatus } from "@/components/auth-status"
 import { useEffect, useState } from "react"
@@ -44,7 +44,6 @@ export default function Dashboard() {
           setBusinessProfile(profile)
           console.log("[v0] Dashboard: business profile loaded", profile)
 
-          // Check if profile is incomplete (missing required fields)
           const requiredFields = ["name", "category", "timezone"]
           const isIncomplete = requiredFields.some((field) => !profile[field])
           if (isIncomplete) {
@@ -56,7 +55,6 @@ export default function Dashboard() {
         }
       } catch (error) {
         console.error("[v0] Dashboard: error fetching business profile:", error)
-        // Still show banner if we can't determine profile status
         setShowSetupBanner(true)
       } finally {
         setIsLoadingProfile(false)
@@ -79,14 +77,12 @@ export default function Dashboard() {
           setIsSynced(true)
         } else {
           console.log("[v0] Dashboard: no run found or missing forecast data")
-          // Don't show setup banner if we already have a profile
           if (!businessProfile) {
             setShowSetupBanner(true)
           }
         }
       } catch (error) {
         console.error("[v0] Dashboard: latestRun error:", error)
-        // Don't throw - just log and show empty state
       } finally {
         setIsLoadingRun(false)
       }
@@ -155,6 +151,50 @@ export default function Dashboard() {
           )}
         </div>
 
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Next Steps</CardTitle>
+              <TrendingUp className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <p className="text-xs text-muted-foreground">
+                {hasForecastData ? "Review your forecast predictions" : "Complete onboarding to get started"}
+              </p>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Inventory Insights</CardTitle>
+              <Package className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <p className="text-xs text-muted-foreground">Coming soon</p>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Recommended Promotions</CardTitle>
+              <Megaphone className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <p className="text-xs text-muted-foreground">Coming soon</p>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Low-Stock Alerts</CardTitle>
+              <TrendingDown className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <p className="text-xs text-muted-foreground">Coming soon</p>
+            </CardContent>
+          </Card>
+        </div>
+
         <Card>
           <CardHeader>
             <div className="flex items-center justify-between">
@@ -213,7 +253,7 @@ export default function Dashboard() {
             ) : (
               <div className="flex flex-col items-center justify-center py-12 text-center">
                 <TrendingUp className="mb-4 h-12 w-12 text-muted-foreground/50" />
-                <h3 className="mb-2 text-lg font-semibold text-muted-foreground">No forecasting data available</h3>
+                <h3 className="mb-2 text-lg font-semibold text-muted-foreground">No forecast data yet</h3>
                 <p className="mb-4 text-sm text-muted-foreground">
                   Complete the onboarding process to generate your first forecast
                 </p>

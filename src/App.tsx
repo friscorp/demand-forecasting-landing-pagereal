@@ -10,6 +10,11 @@ import Index from "./pages/Index"
 import Onboarding from "./pages/Onboarding"
 import Dashboard from "./pages/Dashboard"
 import NotFound from "./pages/NotFound"
+import { AppLayout } from "@/components/app-layout"
+import Items from "./pages/Items"
+import Promotions from "./pages/Promotions"
+import BusinessSettings from "./pages/BusinessSettings"
+import Preferences from "./pages/Preferences"
 
 const queryClient = new QueryClient()
 
@@ -22,12 +27,18 @@ const App = () => (
         <AuthProvider>
           <OnboardingProvider>
             <ForecastProvider>
-              <Routes>
-                <Route path="/" element={<Index />} />
-                <Route path="/onboarding" element={<Onboarding />} />
-                <Route path="/dashboard" element={<Dashboard />} />
-                <Route path="*" element={<NotFound />} />
-              </Routes>
+              <AppLayout>
+                <Routes>
+                  <Route path="/" element={<Index />} />
+                  <Route path="/onboarding" element={<Onboarding />} />
+                  <Route path="/dashboard" element={<Dashboard />} />
+                  <Route path="/items" element={<Items />} />
+                  <Route path="/promotions" element={<Promotions />} />
+                  <Route path="/business-settings" element={<BusinessSettings />} />
+                  <Route path="/preferences" element={<Preferences />} />
+                  <Route path="*" element={<NotFound />} />
+                </Routes>
+              </AppLayout>
             </ForecastProvider>
           </OnboardingProvider>
         </AuthProvider>
