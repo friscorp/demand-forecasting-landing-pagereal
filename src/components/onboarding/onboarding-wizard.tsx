@@ -12,7 +12,7 @@ import { StepUploadCSV } from "./steps/step-upload-csv"
 import { StepEvents } from "./steps/step-events"
 import { StepRecipeMapping } from "./steps/step-recipe-mapping"
 import { StepGenerateForecast } from "./steps/step-generate-forecast"
-import { ingestCsv, forecastFromDb, saveRun } from "@/lib/api"
+import { ingestCsv, forecastFromDb, saveRun, saveBusinessProfile } from "@/lib/api"
 import { useState } from "react"
 import { AuthModal } from "@/components/auth-modal"
 import { useNavigate } from "react-router-dom"
@@ -48,6 +48,10 @@ export function OnboardingWizard() {
   const [forecastError, setForecastError] = useState<string | null>(null)
   const [lastForecastResponse, setLastForecastResponse] = useState<any | null>(null)
   const [isRetryingSave, setIsRetryingSave] = useState(false)
+
+  const [isSavingProfile, setIsSavingProfile] = useState(false)
+  const [profileSaveError, setProfileSaveError] = useState<string | null>(null)
+  const [profileSaveSuccess, setProfileSaveSuccess] = useState<string | null>(null)
 
   const handleAuthSuccess = () => {
     if (pendingAction === "ingest") {
@@ -114,6 +118,8 @@ export function OnboardingWizard() {
   const performForecast = async () => {
     setIsForecastingDB(true)
     setForecastError(null)
+    setProfileSaveError(null)
+    setProfileSaveSuccess(null)
 
     try {
       const forecastResponse = await forecastFromDb({ horizonDays: 7 })
@@ -147,6 +153,34 @@ export function OnboardingWizard() {
         })
 
         console.log("[v0] saveRun success:", runResponse)
+
+        setIsSavingProfile(true)
+        try {
+          await saveBusinessProfile({
+            profile: {
+              name: data.businessName || "My Business",
+              category: data.category || "",
+              timezone: data.timezone || "",
+              unitOfMeasure: data.unitOfMeasure || "",
+              hours: data.hours,
+              closedDates: data.closedDates,
+              leadTime: data.leadTime || "",
+              customLeadTime: data.customLeadTime,
+              events: data.events,
+              recipeMapping: data.recipeMapping,
+            },
+          })
+          console.log("[v0] Business profile saved successfully")
+          setProfileSaveSuccess("Business setup saved")
+        } catch (profileError) {
+          console.error("[v0] Failed to save business profile:", profileError)
+          setProfileSaveError("Couldn't save business setup. Please try again.")
+          setIsSavingProfile(false)
+          setIsForecastingDB(false)
+          return
+        } finally {
+          setIsSavingProfile(false)
+        }
 
         resetOnboarding()
 
@@ -244,6 +278,8 @@ export function OnboardingWizard() {
       setIngestError(null)
       setIngestSuccess(null)
       setForecastError(null)
+      setProfileSaveError(null)
+      setProfileSaveSuccess(null)
     }
   }
 
@@ -288,6 +324,18 @@ export function OnboardingWizard() {
         </>
       )}
 
+      {currentStep === 6 && profileSaveSuccess && (
+        <div className="mb-4 rounded-lg border border-green-200 bg-green-50 p-4 text-sm text-green-800">
+          {profileSaveSuccess}
+        </div>
+      )}
+
+      {currentStep === 6 && profileSaveError && (
+        <div className="mb-4 rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-800">
+          {profileSaveError}
+        </div>
+      )}
+
       {currentStep === 6 && forecastError && (
         <div className="mb-4 rounded-lg border border-red-200 bg-red-50 p-4">
           <p className="mb-2 text-sm text-red-800">{forecastError}</p>
@@ -310,23 +358,29 @@ export function OnboardingWizard() {
         <Button
           variant="outline"
           onClick={handleBack}
-          disabled={currentStep === 0 || isIngesting || isForecastingDB}
+          disabled={currentStep === 0 || isIngesting || isForecastingDB || isSavingProfile}
           className="gap-2 bg-transparent"
         >
           <ChevronLeft className="h-4 w-4" />
           Back
         </Button>
-        <Button onClick={handleNext} disabled={isIngesting || isForecastingDB || authLoading} className="gap-2">
+        <Button
+          onClick={handleNext}
+          disabled={isIngesting || isForecastingDB || authLoading || isSavingProfile}
+          className="gap-2"
+        >
           {isIngesting
             ? "Uploading..."
             : isForecastingDB
               ? "Generating..."
-              : authLoading
-                ? "Loading..."
-                : currentStep === steps.length - 1
-                  ? "Generate Forecast"
-                  : "Continue"}
-          {!isIngesting && !isForecastingDB && !authLoading && <ChevronRight className="h-4 w-4" />}
+              : isSavingProfile
+                ? "Saving..."
+                : authLoading
+                  ? "Loading..."
+                  : currentStep === steps.length - 1
+                    ? "Generate Forecast"
+                    : "Continue"}
+          {!isIngesting && !isForecastingDB && !authLoading && !isSavingProfile && <ChevronRight className="h-4 w-4" />}
         </Button>
       </div>
 

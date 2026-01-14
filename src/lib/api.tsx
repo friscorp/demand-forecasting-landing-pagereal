@@ -65,6 +65,39 @@ export interface LatestRunResponse {
   createdAt: string
 }
 
+export interface BusinessProfile {
+  name: string
+  category?: string
+  timezone?: string
+  unitOfMeasure?: string
+  hours?: {
+    [key: string]: { open: string; close: string; enabled: boolean }
+  }
+  closedDates?: string[]
+  leadTime?: string
+  customLeadTime?: number
+  events?: Array<{
+    date: string
+    type: "holiday" | "promotion" | "closure"
+    description: string
+  }>
+  recipeMapping?: Array<{
+    item: string
+    ingredients: Array<{ name: string; quantity: number }>
+  }>
+  [key: string]: any
+}
+
+export interface SaveBusinessProfileRequest {
+  profile: BusinessProfile
+}
+
+export interface SaveBusinessProfileResponse {
+  success: boolean
+  message?: string
+}
+// </CHANGE>
+
 // ----- Helper Function -----
 
 async function authedJsonFetch(path: string, options?: RequestInit): Promise<any> {
@@ -218,3 +251,30 @@ export async function latestRun(): Promise<LatestRunResponse | null> {
     throw new Error(error.message || "Failed to fetch latest run")
   }
 }
+
+export async function saveBusinessProfile(data: SaveBusinessProfileRequest): Promise<SaveBusinessProfileResponse> {
+  console.log("[v0] Calling saveBusinessProfile with:", {
+    name: data.profile.name,
+    category: data.profile.category,
+    hasHours: !!data.profile.hours,
+    hasEvents: !!data.profile.events,
+  })
+
+  try {
+    const result = await authedJsonFetch(
+      "https://us-central1-business-forecast-ea3a5.cloudfunctions.net/saveBusinessProfile",
+      {
+        method: "POST",
+        body: JSON.stringify(data),
+      },
+    )
+
+    console.log("[v0] saveBusinessProfile response:", result)
+
+    return result
+  } catch (error: any) {
+    console.error("[v0] saveBusinessProfile error:", error)
+    throw new Error(error.message || "Failed to save business profile")
+  }
+}
+// </CHANGE>
