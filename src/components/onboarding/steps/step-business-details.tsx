@@ -5,6 +5,7 @@ import { OptionCard } from "../option-card"
 import { Store, Coffee, ShoppingBag, Package } from "lucide-react"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Input } from "@/components/ui/input"
 
 const categories = [
   {
@@ -63,6 +64,17 @@ export function StepBusinessDetails() {
             />
           ))}
         </div>
+      </div>
+
+      <div className="space-y-2">
+        <Label htmlFor="location">Business Location (City/Region)</Label>
+        <Input
+          id="location"
+          type="text"
+          placeholder="e.g., New York, NY"
+          value={data.location}
+          onChange={(e) => updateData({ location: e.target.value })}
+        />
       </div>
 
       <div className="grid gap-6 sm:grid-cols-2">

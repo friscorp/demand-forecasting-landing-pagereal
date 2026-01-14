@@ -159,7 +159,8 @@ export function OnboardingWizard() {
           await saveBusinessProfile({
             profile: {
               name: data.businessName || "My Business",
-              category: data.category || "",
+              industry: data.category || "",
+              location: data.location || "",
               timezone: data.timezone || "",
               unitOfMeasure: data.unitOfMeasure || "",
               hours: data.hours,

@@ -5,6 +5,7 @@ import { createContext, useContext, useState, type ReactNode } from "react"
 interface OnboardingData {
   businessName: string
   category: string
+  location: string
   timezone: string
   unitOfMeasure: string
   hours: {
@@ -37,6 +38,7 @@ interface OnboardingContextType {
 const defaultData: OnboardingData = {
   businessName: "",
   category: "",
+  location: "",
   timezone: "America/New_York",
   unitOfMeasure: "units",
   hours: {
