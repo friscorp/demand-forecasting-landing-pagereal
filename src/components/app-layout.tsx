@@ -6,6 +6,7 @@ import { SidebarProvider, SidebarInset, SidebarTrigger } from "@/components/ui/s
 import { AppSidebar } from "./app-sidebar"
 import { UserMenu } from "./user-menu"
 import { useAuth } from "@/lib/auth-context"
+import { useLocation } from "react-router-dom"
 
 interface AppLayoutProps {
   children: React.ReactNode
@@ -13,8 +14,16 @@ interface AppLayoutProps {
 
 export function AppLayout({ children }: AppLayoutProps) {
   const { user } = useAuth()
+  const location = useLocation()
 
-  if (!user) {
+  const isDashboardPage =
+    location.pathname.startsWith("/dashboard") ||
+    location.pathname.startsWith("/items") ||
+    location.pathname.startsWith("/promotions") ||
+    location.pathname.startsWith("/business-settings") ||
+    location.pathname.startsWith("/preferences")
+
+  if (!user || !isDashboardPage) {
     return <>{children}</>
   }
 
