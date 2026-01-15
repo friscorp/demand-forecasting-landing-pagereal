@@ -26,16 +26,11 @@ export interface UploadDoc {
  * Fetch the latest upload document for a user from Firestore
  */
 export async function fetchLatestUpload(userId: string): Promise<UploadDoc | null> {
-  console.log("[v0] HourMask: fetching latest upload...")
+  console.log("[v0] HourMask: fetching latest upload for userId:", userId)
 
   try {
-    const uploadsRef = collection(db, "uploads")
-    const q = query(
-      uploadsRef,
-      // Filter by businessId which should match the user's uid
-      orderBy("lastUsedAt", "desc"),
-      limit(1),
-    )
+    const uploadsRef = collection(db, "users", userId, "uploads")
+    const q = query(uploadsRef, orderBy("lastUsedAt", "desc"), limit(1))
 
     let snapshot = await getDocs(q)
 
@@ -46,24 +41,18 @@ export async function fetchLatestUpload(userId: string): Promise<UploadDoc | nul
     }
 
     if (snapshot.empty) {
-      console.log("[v0] HourMask: no uploads found")
+      console.log("[v0] HourMask: no uploads found in users/{userId}/uploads")
       return null
     }
 
-    // Filter client-side to ensure it matches the user
-    const uploadDoc = snapshot.docs.find((doc) => {
-      const data = doc.data()
-      return data.businessId === userId
-    })
-
-    if (!uploadDoc) {
-      console.log("[v0] HourMask: no uploads found for this user")
-      return null
-    }
-
+    const uploadDoc = snapshot.docs[0]
     const data = uploadDoc.data() as UploadDoc
 
-    console.log("[v0] HourMask: found upload doc with fileHash:", data.fileHash)
+    console.log(
+      "[v0] HourMask: found upload doc with fileHash:",
+      data.fileHash,
+      "at path: users/" + userId + "/uploads/" + uploadDoc.id,
+    )
     return { ...data, id: uploadDoc.id } as any
   } catch (error) {
     console.error("[v0] HourMask: error fetching latest upload:", error)
@@ -226,8 +215,10 @@ export async function saveHourMaskToFirestore(
   hourMaskV1: HourMask,
   hourMaskCountsV1: HourCounts,
 ): Promise<void> {
+  console.log("[v0] HourMask: saving mask to Firestore at users/" + userId + "/uploads/" + uploadDocId)
+
   try {
-    const uploadRef = doc(db, "uploads", uploadDocId)
+    const uploadRef = doc(db, "users", userId, "uploads", uploadDocId)
     await setDoc(
       uploadRef,
       {
@@ -237,7 +228,7 @@ export async function saveHourMaskToFirestore(
       },
       { merge: true },
     )
-    console.log("[v0] HourMask: saved mask to Firestore")
+    console.log("[v0] HourMask: successfully saved mask to Firestore")
   } catch (error) {
     console.warn("[v0] HourMask: failed to save mask to Firestore:", error)
   }
