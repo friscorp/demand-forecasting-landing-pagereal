@@ -118,8 +118,15 @@ export default function Dashboard() {
           setHourlyItems(Object.keys(hourlyRun.forecast.results))
 
           if (businessProfile) {
+            console.log("[v0] Dashboard: calling loadOrComputeHourMask with businessProfile:", {
+              hasHours: !!businessProfile.hours,
+              timezone: businessProfile.timezone,
+            })
             const mask = await loadOrComputeHourMask(user.uid, businessProfile.hours, businessProfile.timezone)
+            console.log("[v0] Dashboard: hour mask loaded/computed:", mask)
             setHourMask(mask)
+          } else {
+            console.log("[v0] Dashboard: no businessProfile available, skipping hour mask")
           }
         } else {
           console.log("[v0] Dashboard: no hourly forecast found")

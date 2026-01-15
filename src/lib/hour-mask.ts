@@ -251,6 +251,8 @@ export async function loadOrComputeHourMask(
   businessHours?: WeekSchedule,
   timezone?: string,
 ): Promise<HourMask | null> {
+  console.log("[v0] HourMask: loadOrComputeHourMask called for userId:", userId)
+
   const upload = await fetchLatestUpload(userId)
 
   if (!upload) {
@@ -263,6 +265,8 @@ export async function loadOrComputeHourMask(
     console.log("[v0] HourMask: using cached mask from upload doc")
     return upload.hourMaskV1
   }
+
+  console.log("[v0] HourMask: no cached mask found, computing from CSV...")
 
   // Compute mask from CSV
   if (!upload.csvText || !upload.mapping) {
@@ -279,6 +283,7 @@ export async function loadOrComputeHourMask(
 
   // Save back to Firestore
   if ((upload as any).id) {
+    console.log("[v0] HourMask: saving computed mask to Firestore for uploadDocId:", (upload as any).id)
     await saveHourMaskToFirestore(userId, (upload as any).id, hourMaskV1, hourMaskCountsV1)
   }
 
