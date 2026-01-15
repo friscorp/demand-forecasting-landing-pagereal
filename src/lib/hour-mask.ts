@@ -113,6 +113,19 @@ function parseTimestamp(
 }
 
 /**
+ * Check if a cached hour mask is valid (has at least one hour in any day)
+ */
+function isHourMaskValid(mask: HourMask): boolean {
+  const weekdayKeys: WeekdayKey[] = ["sun", "mon", "tue", "wed", "thu", "fri", "sat"]
+  for (const day of weekdayKeys) {
+    if (mask[day] && mask[day].length > 0) {
+      return true
+    }
+  }
+  return false
+}
+
+/**
  * Compute hour mask from CSV text
  */
 export function computeHourMaskFromCsv(
@@ -202,10 +215,10 @@ export function computeHourMaskFromCsv(
   const weekdayKeys: WeekdayKey[] = ["sun", "mon", "tue", "wed", "thu", "fri", "sat"]
 
   for (const weekdayKey of weekdayKeys) {
-    // Check if day is open
-    const isOpen = businessHours?.[weekdayKey]?.length > 0
+    const isOpen = businessHours ? businessHours[weekdayKey]?.length > 0 : true
 
     if (!isOpen) {
+      console.log(`[v0] HourMask: ${weekdayKey} - closed (businessHours says no hours)`)
       hourMaskV1[weekdayKey] = []
       continue
     }
@@ -213,11 +226,18 @@ export function computeHourMaskFromCsv(
     const dayCount = distinctDays[weekdayKey].size
     const threshold = Math.max(2, Math.ceil(dayCount * 0.4))
 
-    console.log(`[v0] HourMask: ${weekdayKey} - ${dayCount} distinct days, threshold=${threshold}`)
+    console.log(
+      `[v0] HourMask: ${weekdayKey} - ${dayCount} distinct days, threshold=${threshold}, counts:`,
+      hourCounts[weekdayKey],
+    )
 
     for (const hourStr in hourCounts[weekdayKey]) {
-      const hour = Number.parseInt(hourStr)
+      const hour = Number.parseInt(hourStr, 10)
       const count = hourCounts[weekdayKey][hour]
+
+      console.log(
+        `[v0] HourMask: ${weekdayKey} hour ${hour} - count=${count}, threshold=${threshold}, include=${count >= threshold}`,
+      )
 
       if (count >= threshold) {
         hourMaskV1[weekdayKey].push(hour)
@@ -228,8 +248,7 @@ export function computeHourMaskFromCsv(
     hourMaskV1[weekdayKey].sort((a, b) => a - b)
   }
 
-  console.log("[v0] HourMask: computed mask:", hourMaskV1)
-  console.log("[v0] HourMask: hour counts sample (mon):", hourCounts.mon)
+  console.log("[v0] HourMask: final computed mask:", JSON.stringify(hourMaskV1))
   return { hourMaskV1, hourMaskCountsV1: hourCounts }
 }
 
@@ -278,13 +297,17 @@ export async function loadOrComputeHourMask(
     return null
   }
 
-  // Check if mask already exists
-  if (upload.hourMaskV1) {
-    console.log("[v0] HourMask: using cached mask from upload doc")
+  // Check if mask already exists AND is valid (has at least one hour)
+  if (upload.hourMaskV1 && isHourMaskValid(upload.hourMaskV1)) {
+    console.log("[v0] HourMask: using valid cached mask from upload doc:", JSON.stringify(upload.hourMaskV1))
     return upload.hourMaskV1
   }
 
-  console.log("[v0] HourMask: no cached mask found, computing from CSV...")
+  if (upload.hourMaskV1) {
+    console.log("[v0] HourMask: cached mask is invalid (all empty), recomputing...")
+  } else {
+    console.log("[v0] HourMask: no cached mask found, computing from CSV...")
+  }
 
   // Compute mask from CSV
   if (!upload.csvText || !upload.mapping) {
