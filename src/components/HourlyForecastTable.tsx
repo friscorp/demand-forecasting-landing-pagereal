@@ -59,6 +59,12 @@ export function HourlyForecastTable({
 
     console.log("[v0] HourlyTable: dayRows count before filtering:", dayRows.length)
     if (dayRows.length > 0) {
+      const hoursInData = dayRows.map((point) => {
+        const parts = parseISOToZonedParts(point.ds, timezone)
+        return parts.hour
+      })
+      console.log("[v0] HourlyTable: all hours in forecast data:", hoursInData)
+
       const firstPoint = dayRows[0]
       const firstParts = parseISOToZonedParts(firstPoint.ds, timezone)
       console.log("[v0] HourlyTable: first point ds:", firstPoint.ds)
