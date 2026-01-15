@@ -12,7 +12,7 @@ import { StepUploadCSV } from "./steps/step-upload-csv"
 import { StepEvents } from "./steps/step-events"
 import { StepRecipeMapping } from "./steps/step-recipe-mapping"
 import { StepGenerateForecast } from "./steps/step-generate-forecast"
-import { ingestCsv, forecastFromDb, saveRun, saveBusinessProfile } from "@/lib/api"
+import { ingestCsv, forecastFromDb, saveRun, saveBusinessProfile, forecastHourly, saveRunHourly } from "@/lib/api"
 import { useState } from "react"
 import { AuthModal } from "@/components/auth-modal"
 import { useNavigate } from "react-router-dom"
@@ -153,6 +153,22 @@ export function OnboardingWizard() {
         })
 
         console.log("[v0] saveRun success:", runResponse)
+
+        console.log("[v0] Starting hourly forecast generation...")
+        try {
+          const hourlyForecastResponse = await forecastHourly({ horizonDays: 7 })
+          console.log("[v0] Hourly forecast generated:", hourlyForecastResponse)
+
+          const hourlyRunResponse = await saveRunHourly({
+            businessName: data.businessName || "My Business",
+            mapping,
+            forecast: hourlyForecastResponse,
+            insights: null,
+          })
+          console.log("[v0] saveRunHourly success:", hourlyRunResponse)
+        } catch (hourlyError) {
+          console.error("[v0] Hourly forecast failed (non-blocking):", hourlyError)
+        }
 
         setIsSavingProfile(true)
         try {
