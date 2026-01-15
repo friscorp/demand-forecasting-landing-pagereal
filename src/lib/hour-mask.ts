@@ -1,3 +1,4 @@
+import Papa from "papaparse"
 import { collection, query, orderBy, limit, getDocs, doc, setDoc } from "firebase/firestore"
 import { db } from "./firebase"
 import type { WeekSchedule } from "./time-filtering"
@@ -62,6 +63,7 @@ export async function fetchLatestUpload(userId: string): Promise<UploadDoc | nul
 
 /**
  * Parse a timestamp from various formats and return weekday + hour
+ * Uses local timezone consistently to avoid UTC/local mismatches
  */
 function parseTimestamp(
   value: string,
@@ -71,11 +73,15 @@ function parseTimestamp(
     // Try ISO format first
     let date = new Date(value)
 
-    // If invalid, try MM/DD/YYYY HH:mm format
+    // If invalid, try M/D/YY H:mm or MM/DD/YYYY HH:mm format
     if (isNaN(date.getTime())) {
-      const match = value.match(/(\d{1,2})\/(\d{1,2})\/(\d{4})\s+(\d{1,2}):(\d{2})/)
+      const match = value.match(/(\d{1,2})\/(\d{1,2})\/(\d{2,4})\s+(\d{1,2}):(\d{2})/)
       if (match) {
-        const [, month, day, year, hour, minute] = match
+        let [, month, day, year, hour, minute] = match
+        // Handle 2-digit year
+        if (year.length === 2) {
+          year = "20" + year
+        }
         date = new Date(
           `${year}-${month.padStart(2, "0")}-${day.padStart(2, "0")}T${hour.padStart(2, "0")}:${minute}:00`,
         )
@@ -86,16 +92,19 @@ function parseTimestamp(
       return null
     }
 
-    // Get weekday (0=Sunday, 6=Saturday)
+    // Get weekday (0=Sunday, 6=Saturday) in local time
     const weekday = date.getDay()
     const weekdayKeys: WeekdayKey[] = ["sun", "mon", "tue", "wed", "thu", "fri", "sat"]
     const weekdayKey = weekdayKeys[weekday]
 
-    // Get hour (0-23)
+    // Get hour (0-23) in local time
     const hour = date.getHours()
 
-    // Get day key for counting distinct days
-    const dayKey = date.toISOString().split("T")[0]
+    // Get day key using local date components instead of UTC
+    const year = date.getFullYear()
+    const month = String(date.getMonth() + 1).padStart(2, "0")
+    const day = String(date.getDate()).padStart(2, "0")
+    const dayKey = `${year}-${month}-${day}`
 
     return { weekdayKey, hour, dayKey }
   } catch (error) {
@@ -134,27 +143,32 @@ export function computeHourMaskFromCsv(
     sat: new Set(),
   }
 
-  // Parse CSV
-  const lines = csvText.split("\n").filter((line) => line.trim())
-  if (lines.length < 2) {
-    console.log("[v0] HourMask: CSV too short")
+  const parsed = Papa.parse(csvText, {
+    header: true,
+    skipEmptyLines: true,
+    trimHeaders: true,
+    transformHeader: (h) => h.trim(),
+  })
+
+  if (parsed.errors.length > 0) {
+    console.warn("[v0] HourMask: CSV parse warnings:", parsed.errors)
+  }
+
+  const rows = parsed.data as any[]
+
+  if (rows.length === 0) {
+    console.log("[v0] HourMask: CSV has no data rows")
     return { hourMaskV1: {} as HourMask, hourMaskCountsV1: hourCounts }
   }
 
-  const headers = lines[0].split(",").map((h) => h.trim())
-  const dateIdx = headers.indexOf(mapping.date)
-
-  if (dateIdx === -1) {
-    console.log("[v0] HourMask: date column not found")
-    return { hourMaskV1: {} as HourMask, hourMaskCountsV1: hourCounts }
-  }
+  const dateColumn = mapping.date
+  console.log("[v0] HourMask: processing", rows.length, "rows, date column:", dateColumn)
 
   // Process rows
-  for (let i = 1; i < lines.length; i++) {
-    const cells = lines[i].split(",").map((c) => c.trim())
-    if (cells.length <= dateIdx) continue
+  for (const row of rows) {
+    const timestamp = row[dateColumn]
+    if (!timestamp) continue
 
-    const timestamp = cells[dateIdx]
     const parsed = parseTimestamp(timestamp, timezone)
 
     if (parsed) {
@@ -163,6 +177,16 @@ export function computeHourMaskFromCsv(
       distinctDays[weekdayKey].add(dayKey)
     }
   }
+
+  console.log("[v0] HourMask: distinct days per weekday:", {
+    sun: distinctDays.sun.size,
+    mon: distinctDays.mon.size,
+    tue: distinctDays.tue.size,
+    wed: distinctDays.wed.size,
+    thu: distinctDays.thu.size,
+    fri: distinctDays.fri.size,
+    sat: distinctDays.sat.size,
+  })
 
   // Build mask with threshold
   const hourMaskV1: HourMask = {
@@ -189,6 +213,8 @@ export function computeHourMaskFromCsv(
     const dayCount = distinctDays[weekdayKey].size
     const threshold = Math.max(2, Math.ceil(dayCount * 0.4))
 
+    console.log(`[v0] HourMask: ${weekdayKey} - ${dayCount} distinct days, threshold=${threshold}`)
+
     for (const hourStr in hourCounts[weekdayKey]) {
       const hour = Number.parseInt(hourStr)
       const count = hourCounts[weekdayKey][hour]
@@ -203,6 +229,7 @@ export function computeHourMaskFromCsv(
   }
 
   console.log("[v0] HourMask: computed mask:", hourMaskV1)
+  console.log("[v0] HourMask: hour counts sample (mon):", hourCounts.mon)
   return { hourMaskV1, hourMaskCountsV1: hourCounts }
 }
 
