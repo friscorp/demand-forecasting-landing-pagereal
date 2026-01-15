@@ -32,13 +32,13 @@ export function parseISOToZonedParts(isoString: string, timezone: string): Zoned
   })
 
   const weekdayMap: Record<string, string> = {
-    Sun: "sunday",
-    Mon: "monday",
-    Tue: "tuesday",
-    Wed: "wednesday",
-    Thu: "thursday",
-    Fri: "friday",
-    Sat: "saturday",
+    Sun: "sun",
+    Mon: "mon",
+    Tue: "tue",
+    Wed: "wed",
+    Thu: "thu",
+    Fri: "fri",
+    Sat: "sat",
   }
 
   return {
@@ -47,7 +47,7 @@ export function parseISOToZonedParts(isoString: string, timezone: string): Zoned
     day: Number.parseInt(partMap.day || "0", 10),
     hour: Number.parseInt(partMap.hour || "0", 10),
     minute: Number.parseInt(partMap.minute || "0", 10),
-    weekdayKey: weekdayMap[partMap.weekday || ""] || "monday",
+    weekdayKey: weekdayMap[partMap.weekday || ""] || "mon",
   }
 }
 
