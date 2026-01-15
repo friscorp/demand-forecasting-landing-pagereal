@@ -4,6 +4,8 @@ import { useState, useMemo } from "react"
 import { Button } from "@/components/ui/button"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { ChevronLeft, ChevronRight } from "lucide-react"
+import { Switch } from "@/components/ui/switch"
+import { Label } from "@/components/ui/label"
 import {
   parseISOToZonedParts,
   getDateKeyYYYYMMDD,
@@ -14,6 +16,7 @@ import {
   getNext7Days,
   type WeekSchedule,
 } from "@/lib/time-filtering"
+import type { HourMask, WeekdayKey } from "@/lib/hour-mask"
 
 interface HourlyForecastTableProps {
   selectedItem: string
@@ -23,18 +26,21 @@ interface HourlyForecastTableProps {
     hours?: WeekSchedule
     closedDates?: string[]
   }
+  hourMask?: HourMask | null
 }
 
 export function HourlyForecastTable({
   selectedItem,
   hourlyForecastForItem,
   businessProfile,
+  hourMask,
 }: HourlyForecastTableProps) {
   const timezone = businessProfile?.timezone || "America/Los_Angeles"
   const hours = businessProfile?.hours
   const closedDates = businessProfile?.closedDates
 
-  // Get the first forecast date to start our 7-day window
+  const [useMaskFilter, setUseMaskFilter] = useState(true)
+
   const firstDate = hourlyForecastForItem.length > 0 ? hourlyForecastForItem[0].ds : new Date().toISOString()
   const firstParts = parseISOToZonedParts(firstDate, timezone)
   const firstDateKey = getDateKeyYYYYMMDD(firstParts)
@@ -57,18 +63,46 @@ export function HourlyForecastTable({
     }
 
     // Filter by business hours
-    return dayRows.filter((point) => {
+    let filtered = dayRows.filter((point) => {
       const parts = parseISOToZonedParts(point.ds, timezone)
       return isOpenHour(parts.weekdayKey, parts.hour, parts.minute, hours)
     })
-  }, [hourlyForecastForItem, currentDateKey, timezone, hours, closedDates])
+
+    if (useMaskFilter && hourMask) {
+      filtered = filtered.filter((point) => {
+        const parts = parseISOToZonedParts(point.ds, timezone)
+        const weekdayKey = parts.weekdayKey as WeekdayKey
+        const allowedHours = hourMask[weekdayKey] || []
+        return allowedHours.includes(parts.hour)
+      })
+    }
+
+    return filtered
+  }, [hourlyForecastForItem, currentDateKey, timezone, hours, closedDates, useMaskFilter, hourMask])
 
   const dayLabel = formatDayLabel(currentDateKey, timezone)
   const hasPrev = currentDayIndex > 0
   const hasNext = currentDayIndex < availableDays.length - 1
 
+  const currentWeekdayKey = useMemo(() => {
+    const parts = parseISOToZonedParts(currentDateKey + "T12:00:00Z", timezone)
+    return parts.weekdayKey as WeekdayKey
+  }, [currentDateKey, timezone])
+
+  const maskEmptyForDay =
+    useMaskFilter && hourMask && (hourMask[currentWeekdayKey]?.length === 0 || !hourMask[currentWeekdayKey])
+
   return (
     <div className="space-y-4">
+      {hourMask && (
+        <div className="flex items-center space-x-2 rounded-lg border p-3 bg-muted/50">
+          <Switch id="mask-toggle" checked={useMaskFilter} onCheckedChange={setUseMaskFilter} />
+          <Label htmlFor="mask-toggle" className="text-sm cursor-pointer">
+            Show only hours present in uploaded data
+          </Label>
+        </div>
+      )}
+
       <div className="flex items-center justify-between">
         <Button
           variant="outline"
@@ -96,7 +130,11 @@ export function HourlyForecastTable({
       {filteredRows.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-12 text-center">
           <p className="text-muted-foreground">
-            {isClosedDate(currentDateKey, closedDates) ? "This day is closed" : "No data for this day"}
+            {isClosedDate(currentDateKey, closedDates)
+              ? "This day is closed"
+              : maskEmptyForDay
+                ? "No matching hours for this day based on uploaded data"
+                : "No data for this day"}
           </p>
         </div>
       ) : (

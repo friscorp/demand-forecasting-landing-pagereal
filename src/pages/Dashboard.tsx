@@ -16,6 +16,7 @@ import { doc, getDoc } from "firebase/firestore"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { HourlyForecastTable } from "@/components/HourlyForecastTable"
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { loadOrComputeHourMask, type HourMask } from "@/lib/hour-mask"
 
 export default function Dashboard() {
   const { forecast, selectedItem, setSelectedItem, setForecast } = useForecast()
@@ -34,6 +35,7 @@ export default function Dashboard() {
   const [forecastMode, setForecastMode] = useState<"daily" | "hourly">("daily")
   const [isGeneratingHourly, setIsGeneratingHourly] = useState(false)
   const [hourlyGenerateError, setHourlyGenerateError] = useState<string | null>(null)
+  const [hourMask, setHourMask] = useState<HourMask | null>(null)
 
   useEffect(() => {
     const loadData = async () => {
@@ -114,6 +116,11 @@ export default function Dashboard() {
           console.log("[v0] Dashboard: hourly forecast loaded, items:", Object.keys(hourlyRun.forecast.results))
           setHourlyForecast(hourlyRun.forecast)
           setHourlyItems(Object.keys(hourlyRun.forecast.results))
+
+          if (businessProfile) {
+            const mask = await loadOrComputeHourMask(user.uid, businessProfile.hours, businessProfile.timezone)
+            setHourMask(mask)
+          }
         } else {
           console.log("[v0] Dashboard: no hourly forecast found")
         }
@@ -125,7 +132,7 @@ export default function Dashboard() {
     }
 
     loadHourlyData()
-  }, [forecastMode, user, authLoading, hourlyForecast])
+  }, [forecastMode, user, authLoading, hourlyForecast, businessProfile])
 
   const handleGenerateHourlyForecast = async () => {
     if (!user || !businessProfile) {
@@ -139,10 +146,8 @@ export default function Dashboard() {
     try {
       console.log("[v0] Dashboard: generating hourly forecast...")
 
-      // Step 1: Generate hourly forecast
       const hourlyResult = await forecastHourly({ horizonDays: 7 })
 
-      // Step 2: Save the hourly run
       const businessName = businessProfile.name || "Business"
       const mapping = forecast?.results ? Object.values(forecast.results)[0]?.meta?.mapping || {} : {}
 
@@ -153,13 +158,17 @@ export default function Dashboard() {
         insights: null,
       })
 
-      // Step 3: Fetch the saved run
       const latest = await latestRunHourly()
 
       if (latest && latest.forecast && latest.forecast.results) {
         console.log("[v0] Dashboard: hourly forecast saved and loaded successfully")
         setHourlyForecast(latest.forecast)
         setHourlyItems(Object.keys(latest.forecast.results))
+
+        if (businessProfile) {
+          const mask = await loadOrComputeHourMask(user.uid, businessProfile.hours, businessProfile.timezone)
+          setHourMask(mask)
+        }
       }
     } catch (error: any) {
       console.error("[v0] Dashboard: error generating hourly forecast:", error)
@@ -369,6 +378,7 @@ export default function Dashboard() {
                 selectedItem={currentHourlyItem}
                 hourlyForecastForItem={hourlyForecastData}
                 businessProfile={businessProfile}
+                hourMask={hourMask}
               />
             ) : (
               <div className="flex flex-col items-center justify-center py-12 text-center">
