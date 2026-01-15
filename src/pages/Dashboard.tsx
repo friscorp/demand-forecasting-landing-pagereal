@@ -5,7 +5,17 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { ArrowLeft, TrendingUp, CheckCircle2, AlertCircle, X, TrendingDown, Package, Megaphone } from "lucide-react"
+import {
+  ArrowLeft,
+  TrendingUp,
+  CheckCircle2,
+  AlertCircle,
+  X,
+  TrendingDown,
+  Package,
+  Megaphone,
+  ExternalLink,
+} from "lucide-react"
 import { useNavigate } from "react-router-dom"
 import { AuthStatus } from "@/components/auth-status"
 import { useEffect, useState } from "react"
@@ -17,7 +27,6 @@ import { Alert, AlertDescription } from "@/components/ui/alert"
 import { HourlyForecastTable } from "@/components/HourlyForecastTable"
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { loadOrComputeHourMask, type HourMask } from "@/lib/hour-mask"
-import { computeItemMetrics, type ItemMetrics } from "@/lib/compute-item-metrics"
 
 export default function Dashboard() {
   const { forecast, selectedItem, setSelectedItem, setForecast } = useForecast()
@@ -37,8 +46,6 @@ export default function Dashboard() {
   const [isGeneratingHourly, setIsGeneratingHourly] = useState(false)
   const [hourlyGenerateError, setHourlyGenerateError] = useState<string | null>(null)
   const [hourMask, setHourMask] = useState<HourMask | null>(null)
-  const [itemMetrics, setItemMetrics] = useState<ItemMetrics[]>([])
-  const [sortBy, setSortBy] = useState<"sevenDayTotal" | "nextOpenDayTotal" | "peak" | "uncertainty">("sevenDayTotal")
   const [maskEnabled, setMaskEnabled] = useState(false)
 
   useEffect(() => {
@@ -144,25 +151,6 @@ export default function Dashboard() {
 
     loadHourlyData()
   }, [forecastMode, user, authLoading, hourlyForecast, businessProfile])
-
-  useEffect(() => {
-    const activeForecast = forecastMode === "hourly" ? hourlyForecast : forecast
-    if (!activeForecast || !activeForecast.results) {
-      setItemMetrics([])
-      return
-    }
-
-    const metrics = computeItemMetrics(activeForecast, businessProfile, hourMask, forecastMode, maskEnabled)
-
-    const sorted = [...metrics].sort((a, b) => {
-      if (sortBy === "peak") {
-        return b.peak.value - a.peak.value
-      }
-      return b[sortBy] - a[sortBy]
-    })
-
-    setItemMetrics(sorted)
-  }, [forecast, hourlyForecast, forecastMode, businessProfile, hourMask, sortBy, maskEnabled])
 
   const handleGenerateHourlyForecast = async () => {
     if (!user || !businessProfile) {
@@ -319,67 +307,6 @@ export default function Dashboard() {
           </Card>
         </div>
 
-        {itemMetrics.length > 0 && (
-          <Card>
-            <CardHeader>
-              <div className="flex items-center justify-between">
-                <div>
-                  <CardTitle>Items</CardTitle>
-                  <CardDescription>Overview of all products with key metrics</CardDescription>
-                </div>
-                <Select value={sortBy} onValueChange={(v) => setSortBy(v as any)}>
-                  <SelectTrigger className="w-48">
-                    <SelectValue placeholder="Sort by" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="sevenDayTotal">7-Day Total</SelectItem>
-                    <SelectItem value="nextOpenDayTotal">Next Open Day</SelectItem>
-                    <SelectItem value="peak">Peak Value</SelectItem>
-                    <SelectItem value="uncertainty">Uncertainty</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </CardHeader>
-            <CardContent>
-              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                {itemMetrics.map((metric) => (
-                  <Card
-                    key={metric.item}
-                    className={`cursor-pointer transition-all hover:shadow-md ${
-                      selectedItem === metric.item ? "border-primary shadow-md" : ""
-                    }`}
-                    onClick={() => setSelectedItem(metric.item)}
-                  >
-                    <CardHeader className="pb-3">
-                      <CardTitle className="text-lg">{metric.item}</CardTitle>
-                    </CardHeader>
-                    <CardContent className="space-y-2">
-                      <div className="flex justify-between text-sm">
-                        <span className="text-muted-foreground">Next Open Day:</span>
-                        <span className="font-semibold">{metric.nextOpenDayTotal}</span>
-                      </div>
-                      <div className="flex justify-between text-sm">
-                        <span className="text-muted-foreground">7-Day Total:</span>
-                        <span className="font-semibold">{metric.sevenDayTotal}</span>
-                      </div>
-                      <div className="flex justify-between text-sm">
-                        <span className="text-muted-foreground">Peak:</span>
-                        <span className="font-semibold">
-                          {metric.peak.label} ({metric.peak.value})
-                        </span>
-                      </div>
-                      <div className="flex justify-between text-sm">
-                        <span className="text-muted-foreground">Uncertainty:</span>
-                        <span className="font-semibold">±{metric.uncertainty}</span>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-        )}
-
         <Card>
           <CardHeader>
             <div className="flex items-center justify-between">
@@ -417,6 +344,16 @@ export default function Dashboard() {
             </div>
           </CardHeader>
           <CardContent>
+            {((forecastMode === "daily" && hasForecastData) || (forecastMode === "hourly" && hasHourlyData)) && (
+              <div className="mb-4 flex justify-end">
+                <Button variant="outline" size="sm" onClick={() => navigate("/items")} className="gap-2">
+                  <Package className="h-4 w-4" />
+                  View detailed metrics for {currentItem || currentHourlyItem}
+                  <ExternalLink className="h-3 w-3" />
+                </Button>
+              </div>
+            )}
+
             {forecastMode === "daily" ? (
               hasForecastData && forecastData.length > 0 ? (
                 <Table>
@@ -466,10 +403,12 @@ export default function Dashboard() {
               </div>
             ) : hasHourlyData && hourlyForecastData.length > 0 ? (
               <HourlyForecastTable
+                forecast={hourlyForecast}
                 selectedItem={currentHourlyItem}
-                hourlyForecastForItem={hourlyForecastData}
                 businessProfile={businessProfile}
                 hourMask={hourMask}
+                maskEnabled={maskEnabled}
+                onMaskEnabledChange={setMaskEnabled}
               />
             ) : (
               <div className="flex flex-col items-center justify-center py-12 text-center">
@@ -496,18 +435,6 @@ export default function Dashboard() {
                 </Button>
               </div>
             )}
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle>Forecast Visualization</CardTitle>
-            <CardDescription>Visual representation of demand trends</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="flex flex-col items-center justify-center py-12 text-center border-2 border-dashed border-muted-foreground/20 rounded-lg">
-              <p className="text-muted-foreground">Graph coming soon</p>
-            </div>
           </CardContent>
         </Card>
       </div>
