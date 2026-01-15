@@ -1,7 +1,6 @@
 import Papa from "papaparse"
 import { collection, query, orderBy, limit, getDocs, doc, setDoc } from "firebase/firestore"
 import { db } from "./firebase"
-import type { WeekSchedule } from "./time-filtering"
 
 export type WeekdayKey = "sun" | "mon" | "tue" | "wed" | "thu" | "fri" | "sat"
 export type HourMask = Record<WeekdayKey, number[]>
@@ -21,6 +20,55 @@ export interface UploadDoc {
   hourMaskV1?: HourMask
   hourMaskCountsV1?: HourCounts
   hourMaskUpdatedAt?: any
+}
+
+export interface FirestoreBusinessHours {
+  sunday?: { enabled: boolean; open: string; close: string }
+  monday?: { enabled: boolean; open: string; close: string }
+  tuesday?: { enabled: boolean; open: string; close: string }
+  wednesday?: { enabled: boolean; open: string; close: string }
+  thursday?: { enabled: boolean; open: string; close: string }
+  friday?: { enabled: boolean; open: string; close: string }
+  saturday?: { enabled: boolean; open: string; close: string }
+}
+
+const fullDayToAbbrev: Record<string, WeekdayKey> = {
+  sunday: "sun",
+  monday: "mon",
+  tuesday: "tue",
+  wednesday: "wed",
+  thursday: "thu",
+  friday: "fri",
+  saturday: "sat",
+}
+
+function convertBusinessHoursToOpenMap(hours?: FirestoreBusinessHours): Record<WeekdayKey, boolean> {
+  const result: Record<WeekdayKey, boolean> = {
+    sun: true,
+    mon: true,
+    tue: true,
+    wed: true,
+    thu: true,
+    fri: true,
+    sat: true,
+  }
+
+  if (!hours) {
+    console.log("[v0] HourMask: no businessHours provided, treating all days as open")
+    return result
+  }
+
+  console.log("[v0] HourMask: converting businessHours:", JSON.stringify(hours))
+
+  for (const [fullDay, abbrev] of Object.entries(fullDayToAbbrev)) {
+    const dayData = hours[fullDay as keyof FirestoreBusinessHours]
+    if (dayData) {
+      result[abbrev] = dayData.enabled === true
+      console.log(`[v0] HourMask: ${fullDay} -> ${abbrev}, enabled=${dayData.enabled}`)
+    }
+  }
+
+  return result
 }
 
 /**
@@ -131,10 +179,12 @@ function isHourMaskValid(mask: HourMask): boolean {
 export function computeHourMaskFromCsv(
   csvText: string,
   mapping: { date: string; item: string; quantity: string },
-  businessHours?: WeekSchedule,
+  businessHours?: FirestoreBusinessHours,
   timezone = "America/Los_Angeles",
 ): { hourMaskV1: HourMask; hourMaskCountsV1: HourCounts } {
   console.log("[v0] HourMask: computing mask from CSV (threshold=2)")
+
+  const openDays = convertBusinessHoursToOpenMap(businessHours)
 
   const hourCounts: HourCounts = {
     sun: {},
@@ -215,10 +265,10 @@ export function computeHourMaskFromCsv(
   const weekdayKeys: WeekdayKey[] = ["sun", "mon", "tue", "wed", "thu", "fri", "sat"]
 
   for (const weekdayKey of weekdayKeys) {
-    const isOpen = businessHours ? businessHours[weekdayKey]?.length > 0 : true
+    const isOpen = openDays[weekdayKey]
 
     if (!isOpen) {
-      console.log(`[v0] HourMask: ${weekdayKey} - closed (businessHours says no hours)`)
+      console.log(`[v0] HourMask: ${weekdayKey} - closed (businessHours says disabled)`)
       hourMaskV1[weekdayKey] = []
       continue
     }
@@ -227,17 +277,13 @@ export function computeHourMaskFromCsv(
     const threshold = Math.max(2, Math.ceil(dayCount * 0.4))
 
     console.log(
-      `[v0] HourMask: ${weekdayKey} - ${dayCount} distinct days, threshold=${threshold}, counts:`,
+      `[v0] HourMask: ${weekdayKey} - OPEN, ${dayCount} distinct days, threshold=${threshold}, counts:`,
       hourCounts[weekdayKey],
     )
 
     for (const hourStr in hourCounts[weekdayKey]) {
       const hour = Number.parseInt(hourStr, 10)
       const count = hourCounts[weekdayKey][hour]
-
-      console.log(
-        `[v0] HourMask: ${weekdayKey} hour ${hour} - count=${count}, threshold=${threshold}, include=${count >= threshold}`,
-      )
 
       if (count >= threshold) {
         hourMaskV1[weekdayKey].push(hour)
@@ -285,10 +331,11 @@ export async function saveHourMaskToFirestore(
  */
 export async function loadOrComputeHourMask(
   userId: string,
-  businessHours?: WeekSchedule,
+  businessHours?: FirestoreBusinessHours,
   timezone?: string,
 ): Promise<HourMask | null> {
   console.log("[v0] HourMask: loadOrComputeHourMask called for userId:", userId)
+  console.log("[v0] HourMask: businessHours received:", JSON.stringify(businessHours))
 
   const upload = await fetchLatestUpload(userId)
 
