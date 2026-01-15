@@ -57,6 +57,18 @@ export function HourlyForecastTable({
       return dateKey === currentDateKey
     })
 
+    console.log("[v0] HourlyTable: dayRows count before filtering:", dayRows.length)
+    if (dayRows.length > 0) {
+      const firstPoint = dayRows[0]
+      const firstParts = parseISOToZonedParts(firstPoint.ds, timezone)
+      console.log("[v0] HourlyTable: first point ds:", firstPoint.ds)
+      console.log("[v0] HourlyTable: parsed weekdayKey:", firstParts.weekdayKey, "hour:", firstParts.hour)
+      if (useMaskFilter && hourMask) {
+        const allowedHours = hourMask[firstParts.weekdayKey as WeekdayKey] || []
+        console.log("[v0] HourlyTable: allowedHours for", firstParts.weekdayKey, ":", allowedHours)
+      }
+    }
+
     // Check if this day is closed
     if (isClosedDate(currentDateKey, closedDates)) {
       return []
@@ -68,14 +80,22 @@ export function HourlyForecastTable({
       return isOpenHour(parts.weekdayKey, parts.hour, parts.minute, hours)
     })
 
+    console.log("[v0] HourlyTable: rows after business hours filter:", filtered.length)
+
     if (useMaskFilter && hourMask) {
       filtered = filtered.filter((point) => {
         const parts = parseISOToZonedParts(point.ds, timezone)
         const weekdayKey = parts.weekdayKey as WeekdayKey
         const allowedHours = hourMask[weekdayKey] || []
-        return allowedHours.includes(parts.hour)
+        const isAllowed = allowedHours.includes(parts.hour)
+        if (!isAllowed) {
+          console.log("[v0] HourlyTable: filtering out hour", parts.hour, "for", weekdayKey, "- allowed:", allowedHours)
+        }
+        return isAllowed
       })
     }
+
+    console.log("[v0] HourlyTable: final filtered rows:", filtered.length)
 
     return filtered
   }, [hourlyForecastForItem, currentDateKey, timezone, hours, closedDates, useMaskFilter, hourMask])
