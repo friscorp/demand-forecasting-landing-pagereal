@@ -29,16 +29,20 @@ export async function fetchLatestUpload(userId: string): Promise<UploadDoc | nul
   console.log("[v0] HourMask: fetching latest upload...")
 
   try {
-    const uploadsRef = collection(db, "users", userId, "uploads")
+    const uploadsRef = collection(db, "uploads")
+    const q = query(
+      uploadsRef,
+      // Filter by businessId which should match the user's uid
+      orderBy("lastUsedAt", "desc"),
+      limit(1),
+    )
 
-    // Try orderBy lastUsedAt first
-    let q = query(uploadsRef, orderBy("lastUsedAt", "desc"), limit(1))
     let snapshot = await getDocs(q)
 
-    // Fallback to createdAt if no results
+    // Fallback to createdAt if no results with lastUsedAt
     if (snapshot.empty) {
-      q = query(uploadsRef, orderBy("createdAt", "desc"), limit(1))
-      snapshot = await getDocs(q)
+      const qByCreated = query(uploadsRef, orderBy("createdAt", "desc"), limit(1))
+      snapshot = await getDocs(qByCreated)
     }
 
     if (snapshot.empty) {
@@ -46,7 +50,17 @@ export async function fetchLatestUpload(userId: string): Promise<UploadDoc | nul
       return null
     }
 
-    const uploadDoc = snapshot.docs[0]
+    // Filter client-side to ensure it matches the user
+    const uploadDoc = snapshot.docs.find((doc) => {
+      const data = doc.data()
+      return data.businessId === userId
+    })
+
+    if (!uploadDoc) {
+      console.log("[v0] HourMask: no uploads found for this user")
+      return null
+    }
+
     const data = uploadDoc.data() as UploadDoc
 
     console.log("[v0] HourMask: found upload doc with fileHash:", data.fileHash)
@@ -213,7 +227,7 @@ export async function saveHourMaskToFirestore(
   hourMaskCountsV1: HourCounts,
 ): Promise<void> {
   try {
-    const uploadRef = doc(db, "users", userId, "uploads", uploadDocId)
+    const uploadRef = doc(db, "uploads", uploadDocId)
     await setDoc(
       uploadRef,
       {
