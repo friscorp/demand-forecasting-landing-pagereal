@@ -81,12 +81,17 @@ export function HourlyForecastTable({
     }
 
     // Filter by business hours
-    let filtered = dayRows.filter((point) => {
-      const parts = parseISOToZonedParts(point.ds, timezone)
-      return isOpenHour(parts.weekdayKey, parts.hour, parts.minute, hours)
-    })
-
-    console.log("[v0] HourlyTable: rows after business hours filter:", filtered.length)
+    let filtered = dayRows
+    if (!useMaskFilter) {
+      // Only apply business hours filter when mask is disabled
+      filtered = dayRows.filter((point) => {
+        const parts = parseISOToZonedParts(point.ds, timezone)
+        return isOpenHour(parts.weekdayKey, parts.hour, parts.minute, hours)
+      })
+      console.log("[v0] HourlyTable: rows after business hours filter:", filtered.length)
+    } else {
+      console.log("[v0] HourlyTable: skipping business hours filter (using hour mask instead)")
+    }
 
     if (useMaskFilter && hourMask) {
       filtered = filtered.filter((point) => {
