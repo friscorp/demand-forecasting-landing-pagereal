@@ -96,7 +96,15 @@ export interface SaveBusinessProfileResponse {
   success: boolean
   message?: string
 }
-// </CHANGE>
+
+export interface HourlyRunResponse {
+  id: string
+  businessName: string
+  mapping: Record<string, string>
+  forecast: ForecastResponse
+  meta?: any
+  createdAt: string
+}
 
 // ----- Helper Function -----
 
@@ -277,4 +285,37 @@ export async function saveBusinessProfile(data: SaveBusinessProfileRequest): Pro
     throw new Error(error.message || "Failed to save business profile")
   }
 }
-// </CHANGE>
+
+export async function latestRunHourly(): Promise<HourlyRunResponse | null> {
+  console.log("[v0] Calling latestRunHourly...")
+
+  try {
+    const result = await authedJsonFetch(
+      "https://us-central1-business-forecast-ea3a5.cloudfunctions.net/latestRunHourlyHttp",
+      {
+        method: "GET",
+      },
+    )
+
+    console.log("[v0] latestRunHourly response:", result)
+
+    if (!result) {
+      console.log("[v0] latestRunHourly: no run found")
+      return null
+    }
+
+    // Validate forecast exists
+    if (!result.forecast || !result.forecast.results) {
+      console.error("[v0] latestRunHourly: missing forecast.results in response:", result)
+    }
+
+    return result
+  } catch (error: any) {
+    console.error("[v0] latestRunHourly error:", error)
+    // Return null if no runs exist (common case)
+    if (error.message?.includes("not found") || error.message?.includes("404")) {
+      return null
+    }
+    throw new Error(error.message || "Failed to fetch latest hourly run")
+  }
+}

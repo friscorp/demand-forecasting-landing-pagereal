@@ -10,10 +10,12 @@ import { useNavigate } from "react-router-dom"
 import { AuthStatus } from "@/components/auth-status"
 import { useEffect, useState } from "react"
 import { useAuth } from "@/lib/auth-context"
-import { latestRun } from "@/lib/api"
+import { latestRun, latestRunHourly } from "@/lib/api"
 import { db } from "@/lib/firebase"
 import { doc, getDoc } from "firebase/firestore"
 import { Alert, AlertDescription } from "@/components/ui/alert"
+import { HourlyForecastTable } from "@/components/HourlyForecastTable"
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 
 export default function Dashboard() {
   const { forecast, selectedItem, setSelectedItem, setForecast } = useForecast()
@@ -25,6 +27,11 @@ export default function Dashboard() {
   const [isLoadingProfile, setIsLoadingProfile] = useState(true)
   const [showSetupBanner, setShowSetupBanner] = useState(false)
   const [bannerDismissed, setBannerDismissed] = useState(false)
+
+  const [hourlyForecast, setHourlyForecast] = useState<any>(null)
+  const [hourlyItems, setHourlyItems] = useState<string[]>([])
+  const [isLoadingHourly, setIsLoadingHourly] = useState(false)
+  const [forecastMode, setForecastMode] = useState<"daily" | "hourly">("daily")
 
   useEffect(() => {
     const loadData = async () => {
@@ -91,6 +98,33 @@ export default function Dashboard() {
     loadData()
   }, [user, authLoading, forecast, setForecast, navigate])
 
+  useEffect(() => {
+    const loadHourlyData = async () => {
+      if (forecastMode !== "hourly" || !user || authLoading) return
+      if (hourlyForecast) return // Already loaded
+
+      setIsLoadingHourly(true)
+      try {
+        console.log("[v0] Dashboard: loading hourly forecast...")
+        const hourlyRun = await latestRunHourly()
+
+        if (hourlyRun && hourlyRun.forecast && hourlyRun.forecast.results) {
+          console.log("[v0] Dashboard: hourly forecast loaded, items:", Object.keys(hourlyRun.forecast.results))
+          setHourlyForecast(hourlyRun.forecast)
+          setHourlyItems(Object.keys(hourlyRun.forecast.results))
+        } else {
+          console.log("[v0] Dashboard: no hourly forecast found")
+        }
+      } catch (error) {
+        console.error("[v0] Dashboard: error loading hourly forecast:", error)
+      } finally {
+        setIsLoadingHourly(false)
+      }
+    }
+
+    loadHourlyData()
+  }, [forecastMode, user, authLoading, hourlyForecast])
+
   if (authLoading || isLoadingRun || isLoadingProfile) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-background to-muted">
@@ -107,6 +141,11 @@ export default function Dashboard() {
   const hasForecastData = items.length > 0
   const currentItem = selectedItem || items[0]
   const forecastData = hasForecastData ? resultsObj[currentItem]?.forecast || [] : []
+
+  const hourlyResultsObj = hourlyForecast?.results ?? {}
+  const hasHourlyData = hourlyItems.length > 0
+  const currentHourlyItem = selectedItem || hourlyItems[0]
+  const hourlyForecastData = hasHourlyData ? hourlyResultsObj[currentHourlyItem]?.forecast || [] : []
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background to-muted p-8">
@@ -143,7 +182,7 @@ export default function Dashboard() {
             <h1 className="text-3xl font-bold text-secondary">Demand Forecast Dashboard</h1>
             <p className="text-muted-foreground">AI-powered demand predictions for the next 7 days</p>
           </div>
-          {isSynced && hasForecastData && (
+          {isSynced && (hasForecastData || hasHourlyData) && (
             <div className="flex items-center gap-2 rounded-full bg-green-50 px-4 py-2 text-sm font-medium text-green-700">
               <CheckCircle2 className="h-4 w-4" />
               Synced
@@ -159,7 +198,9 @@ export default function Dashboard() {
             </CardHeader>
             <CardContent>
               <p className="text-xs text-muted-foreground">
-                {hasForecastData ? "Review your forecast predictions" : "Complete onboarding to get started"}
+                {hasForecastData || hasHourlyData
+                  ? "Review your forecast predictions"
+                  : "Complete onboarding to get started"}
               </p>
             </CardContent>
           </Card>
@@ -201,63 +242,96 @@ export default function Dashboard() {
               <div>
                 <CardTitle>Product Forecast</CardTitle>
                 <CardDescription>
-                  {hasForecastData
+                  {hasForecastData || hasHourlyData
                     ? "Select a product to view its demand forecast"
                     : "Complete onboarding to generate your first forecast"}
                 </CardDescription>
               </div>
-              {hasForecastData && (
-                <Select value={currentItem} onValueChange={setSelectedItem}>
-                  <SelectTrigger className="w-64">
-                    <SelectValue placeholder="Select product" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {items.map((item) => (
-                      <SelectItem key={item} value={item}>
-                        {item}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              )}
+              <div className="flex items-center gap-4">
+                <Tabs value={forecastMode} onValueChange={(v) => setForecastMode(v as "daily" | "hourly")}>
+                  <TabsList>
+                    <TabsTrigger value="daily">Daily</TabsTrigger>
+                    <TabsTrigger value="hourly">Hourly</TabsTrigger>
+                  </TabsList>
+                </Tabs>
+
+                {((forecastMode === "daily" && hasForecastData) || (forecastMode === "hourly" && hasHourlyData)) && (
+                  <Select value={currentItem || currentHourlyItem} onValueChange={setSelectedItem}>
+                    <SelectTrigger className="w-64">
+                      <SelectValue placeholder="Select product" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {(forecastMode === "daily" ? items : hourlyItems).map((item) => (
+                        <SelectItem key={item} value={item}>
+                          {item}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
+              </div>
             </div>
           </CardHeader>
           <CardContent>
-            {hasForecastData && forecastData.length > 0 ? (
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Date</TableHead>
-                    <TableHead className="text-right">Predicted Demand</TableHead>
-                    <TableHead className="text-right">Lower Bound</TableHead>
-                    <TableHead className="text-right">Upper Bound</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {forecastData.map((point, index) => (
-                    <TableRow key={index}>
-                      <TableCell className="font-medium">
-                        {new Date(point.ds).toLocaleDateString("en-US", {
-                          weekday: "short",
-                          month: "short",
-                          day: "numeric",
-                        })}
-                      </TableCell>
-                      <TableCell className="text-right font-semibold">{Math.round(point.yhat)}</TableCell>
-                      <TableCell className="text-right text-muted-foreground">{point.yhat_lower.toFixed(1)}</TableCell>
-                      <TableCell className="text-right text-muted-foreground">{point.yhat_upper.toFixed(1)}</TableCell>
+            {forecastMode === "daily" ? (
+              hasForecastData && forecastData.length > 0 ? (
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Date</TableHead>
+                      <TableHead className="text-right">Predicted Demand</TableHead>
+                      <TableHead className="text-right">Lower Bound</TableHead>
+                      <TableHead className="text-right">Upper Bound</TableHead>
                     </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
+                  </TableHeader>
+                  <TableBody>
+                    {forecastData.map((point, index) => (
+                      <TableRow key={index}>
+                        <TableCell className="font-medium">
+                          {new Date(point.ds).toLocaleDateString("en-US", {
+                            weekday: "short",
+                            month: "short",
+                            day: "numeric",
+                          })}
+                        </TableCell>
+                        <TableCell className="text-right font-semibold">{Math.round(point.yhat)}</TableCell>
+                        <TableCell className="text-right text-muted-foreground">
+                          {point.yhat_lower.toFixed(1)}
+                        </TableCell>
+                        <TableCell className="text-right text-muted-foreground">
+                          {point.yhat_upper.toFixed(1)}
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              ) : (
+                <div className="flex flex-col items-center justify-center py-12 text-center">
+                  <TrendingUp className="mb-4 h-12 w-12 text-muted-foreground/50" />
+                  <h3 className="mb-2 text-lg font-semibold text-muted-foreground">No forecast data yet</h3>
+                  <p className="mb-4 text-sm text-muted-foreground">
+                    Complete the onboarding process to generate your first forecast
+                  </p>
+                  <Button onClick={() => navigate("/onboarding")}>Create one</Button>
+                </div>
+              )
+            ) : isLoadingHourly ? (
+              <div className="flex flex-col items-center justify-center py-12">
+                <div className="mb-4 h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
+                <p className="text-muted-foreground">Loading hourly forecast...</p>
+              </div>
+            ) : hasHourlyData && hourlyForecastData.length > 0 ? (
+              <HourlyForecastTable
+                selectedItem={currentHourlyItem}
+                hourlyForecastForItem={hourlyForecastData}
+                businessProfile={businessProfile}
+              />
             ) : (
               <div className="flex flex-col items-center justify-center py-12 text-center">
                 <TrendingUp className="mb-4 h-12 w-12 text-muted-foreground/50" />
-                <h3 className="mb-2 text-lg font-semibold text-muted-foreground">No forecast data yet</h3>
-                <p className="mb-4 text-sm text-muted-foreground">
-                  Complete the onboarding process to generate your first forecast
-                </p>
-                <Button onClick={() => navigate("/onboarding")}>Create one</Button>
+                <h3 className="mb-2 text-lg font-semibold text-muted-foreground">No hourly forecast yet</h3>
+                <p className="mb-4 text-sm text-muted-foreground">Generate one from your dashboard or onboarding</p>
+                <Button onClick={() => navigate("/onboarding")}>Generate one</Button>
               </div>
             )}
           </CardContent>
