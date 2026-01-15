@@ -10,7 +10,7 @@ import { useNavigate } from "react-router-dom"
 import { AuthStatus } from "@/components/auth-status"
 import { useEffect, useState } from "react"
 import { useAuth } from "@/lib/auth-context"
-import { latestRun, latestRunHourly } from "@/lib/api"
+import { latestRun, latestRunHourly, forecastHourly, saveRunHourly } from "@/lib/api"
 import { db } from "@/lib/firebase"
 import { doc, getDoc } from "firebase/firestore"
 import { Alert, AlertDescription } from "@/components/ui/alert"
@@ -32,6 +32,8 @@ export default function Dashboard() {
   const [hourlyItems, setHourlyItems] = useState<string[]>([])
   const [isLoadingHourly, setIsLoadingHourly] = useState(false)
   const [forecastMode, setForecastMode] = useState<"daily" | "hourly">("daily")
+  const [isGeneratingHourly, setIsGeneratingHourly] = useState(false)
+  const [hourlyGenerateError, setHourlyGenerateError] = useState<string | null>(null)
 
   useEffect(() => {
     const loadData = async () => {
@@ -124,6 +126,48 @@ export default function Dashboard() {
 
     loadHourlyData()
   }, [forecastMode, user, authLoading, hourlyForecast])
+
+  const handleGenerateHourlyForecast = async () => {
+    if (!user || !businessProfile) {
+      setHourlyGenerateError("Please complete business setup first")
+      return
+    }
+
+    setIsGeneratingHourly(true)
+    setHourlyGenerateError(null)
+
+    try {
+      console.log("[v0] Dashboard: generating hourly forecast...")
+
+      // Step 1: Generate hourly forecast
+      const hourlyResult = await forecastHourly({ horizonDays: 7 })
+
+      // Step 2: Save the hourly run
+      const businessName = businessProfile.name || "Business"
+      const mapping = forecast?.results ? Object.values(forecast.results)[0]?.meta?.mapping || {} : {}
+
+      await saveRunHourly({
+        businessName,
+        mapping,
+        forecast: hourlyResult,
+        insights: null,
+      })
+
+      // Step 3: Fetch the saved run
+      const latest = await latestRunHourly()
+
+      if (latest && latest.forecast && latest.forecast.results) {
+        console.log("[v0] Dashboard: hourly forecast saved and loaded successfully")
+        setHourlyForecast(latest.forecast)
+        setHourlyItems(Object.keys(latest.forecast.results))
+      }
+    } catch (error: any) {
+      console.error("[v0] Dashboard: error generating hourly forecast:", error)
+      setHourlyGenerateError(error.message || "Failed to generate hourly forecast")
+    } finally {
+      setIsGeneratingHourly(false)
+    }
+  }
 
   if (authLoading || isLoadingRun || isLoadingProfile) {
     return (
@@ -330,8 +374,25 @@ export default function Dashboard() {
               <div className="flex flex-col items-center justify-center py-12 text-center">
                 <TrendingUp className="mb-4 h-12 w-12 text-muted-foreground/50" />
                 <h3 className="mb-2 text-lg font-semibold text-muted-foreground">No hourly forecast yet</h3>
-                <p className="mb-4 text-sm text-muted-foreground">Generate one from your dashboard or onboarding</p>
-                <Button onClick={() => navigate("/onboarding")}>Generate one</Button>
+                <p className="mb-4 text-sm text-muted-foreground">
+                  Generate an hourly forecast to see detailed predictions
+                </p>
+                {hourlyGenerateError && (
+                  <Alert variant="destructive" className="mb-4 max-w-md">
+                    <AlertCircle className="h-4 w-4" />
+                    <AlertDescription>{hourlyGenerateError}</AlertDescription>
+                  </Alert>
+                )}
+                <Button onClick={handleGenerateHourlyForecast} disabled={isGeneratingHourly}>
+                  {isGeneratingHourly ? (
+                    <>
+                      <div className="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-background border-t-transparent" />
+                      Generating...
+                    </>
+                  ) : (
+                    "Generate Hourly Forecast"
+                  )}
+                </Button>
               </div>
             )}
           </CardContent>

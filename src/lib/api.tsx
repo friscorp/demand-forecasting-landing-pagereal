@@ -319,3 +319,58 @@ export async function latestRunHourly(): Promise<HourlyRunResponse | null> {
     throw new Error(error.message || "Failed to fetch latest hourly run")
   }
 }
+
+export async function forecastHourly(data: ForecastRequest): Promise<ForecastResponse> {
+  console.log("[v0] Calling forecastHourlyFromDbHttp with:", data)
+
+  try {
+    const result = await authedJsonFetch(
+      "https://us-central1-business-forecast-ea3a5.cloudfunctions.net/forecastHourlyFromDbHttp",
+      {
+        method: "POST",
+        body: JSON.stringify(data),
+      },
+    )
+
+    console.log("[v0] forecastHourlyFromDbHttp response:", result)
+
+    if (!result || !result.results) {
+      console.error("[v0] forecastHourlyFromDbHttp invalid response - missing .results:", result)
+      throw new Error("Invalid hourly forecast response: missing results field")
+    }
+
+    return result
+  } catch (error: any) {
+    console.error("[v0] forecastHourlyFromDbHttp error:", error)
+    throw new Error(error.message || "Failed to generate hourly forecast")
+  }
+}
+
+export async function saveRunHourly(data: SaveRunRequest): Promise<SaveRunResponse> {
+  console.log("[v0] Calling saveRunHourlyHttp with:", {
+    businessName: data.businessName,
+    mapping: data.mapping,
+    forecastKeys: data.forecast ? Object.keys(data.forecast.results || {}) : null,
+  })
+
+  try {
+    const result = await authedJsonFetch(
+      "https://us-central1-business-forecast-ea3a5.cloudfunctions.net/saveRunHourlyHttp",
+      {
+        method: "POST",
+        body: JSON.stringify(data),
+      },
+    )
+
+    console.log("[v0] saveRunHourlyHttp response:", result)
+
+    if (!result || !result.id) {
+      throw new Error("Invalid response from saveRunHourlyHttp: missing id")
+    }
+
+    return result
+  } catch (error: any) {
+    console.error("[v0] saveRunHourlyHttp error:", error)
+    throw new Error(error.message || "Failed to save hourly run")
+  }
+}
