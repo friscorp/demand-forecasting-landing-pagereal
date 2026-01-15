@@ -17,6 +17,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert"
 import { HourlyForecastTable } from "@/components/HourlyForecastTable"
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { loadOrComputeHourMask, type HourMask } from "@/lib/hour-mask"
+import { computeItemMetrics, type ItemMetrics } from "@/lib/compute-item-metrics"
 
 export default function Dashboard() {
   const { forecast, selectedItem, setSelectedItem, setForecast } = useForecast()
@@ -36,6 +37,9 @@ export default function Dashboard() {
   const [isGeneratingHourly, setIsGeneratingHourly] = useState(false)
   const [hourlyGenerateError, setHourlyGenerateError] = useState<string | null>(null)
   const [hourMask, setHourMask] = useState<HourMask | null>(null)
+  const [itemMetrics, setItemMetrics] = useState<ItemMetrics[]>([])
+  const [sortBy, setSortBy] = useState<"sevenDayTotal" | "nextOpenDayTotal" | "peak" | "uncertainty">("sevenDayTotal")
+  const [maskEnabled, setMaskEnabled] = useState(false)
 
   useEffect(() => {
     const loadData = async () => {
@@ -140,6 +144,25 @@ export default function Dashboard() {
 
     loadHourlyData()
   }, [forecastMode, user, authLoading, hourlyForecast, businessProfile])
+
+  useEffect(() => {
+    const activeForecast = forecastMode === "hourly" ? hourlyForecast : forecast
+    if (!activeForecast || !activeForecast.results) {
+      setItemMetrics([])
+      return
+    }
+
+    const metrics = computeItemMetrics(activeForecast, businessProfile, hourMask, forecastMode, maskEnabled)
+
+    const sorted = [...metrics].sort((a, b) => {
+      if (sortBy === "peak") {
+        return b.peak.value - a.peak.value
+      }
+      return b[sortBy] - a[sortBy]
+    })
+
+    setItemMetrics(sorted)
+  }, [forecast, hourlyForecast, forecastMode, businessProfile, hourMask, sortBy, maskEnabled])
 
   const handleGenerateHourlyForecast = async () => {
     if (!user || !businessProfile) {
@@ -295,6 +318,67 @@ export default function Dashboard() {
             </CardContent>
           </Card>
         </div>
+
+        {itemMetrics.length > 0 && (
+          <Card>
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle>Items</CardTitle>
+                  <CardDescription>Overview of all products with key metrics</CardDescription>
+                </div>
+                <Select value={sortBy} onValueChange={(v) => setSortBy(v as any)}>
+                  <SelectTrigger className="w-48">
+                    <SelectValue placeholder="Sort by" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="sevenDayTotal">7-Day Total</SelectItem>
+                    <SelectItem value="nextOpenDayTotal">Next Open Day</SelectItem>
+                    <SelectItem value="peak">Peak Value</SelectItem>
+                    <SelectItem value="uncertainty">Uncertainty</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </CardHeader>
+            <CardContent>
+              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                {itemMetrics.map((metric) => (
+                  <Card
+                    key={metric.item}
+                    className={`cursor-pointer transition-all hover:shadow-md ${
+                      selectedItem === metric.item ? "border-primary shadow-md" : ""
+                    }`}
+                    onClick={() => setSelectedItem(metric.item)}
+                  >
+                    <CardHeader className="pb-3">
+                      <CardTitle className="text-lg">{metric.item}</CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-2">
+                      <div className="flex justify-between text-sm">
+                        <span className="text-muted-foreground">Next Open Day:</span>
+                        <span className="font-semibold">{metric.nextOpenDayTotal}</span>
+                      </div>
+                      <div className="flex justify-between text-sm">
+                        <span className="text-muted-foreground">7-Day Total:</span>
+                        <span className="font-semibold">{metric.sevenDayTotal}</span>
+                      </div>
+                      <div className="flex justify-between text-sm">
+                        <span className="text-muted-foreground">Peak:</span>
+                        <span className="font-semibold">
+                          {metric.peak.label} ({metric.peak.value})
+                        </span>
+                      </div>
+                      <div className="flex justify-between text-sm">
+                        <span className="text-muted-foreground">Uncertainty:</span>
+                        <span className="font-semibold">±{metric.uncertainty}</span>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
         <Card>
           <CardHeader>
