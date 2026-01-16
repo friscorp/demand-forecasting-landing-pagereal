@@ -240,7 +240,7 @@ export default function Dashboard() {
             variant="ghost"
             size="sm"
             onClick={() => {
-              navigate("/settings")
+              navigate("/business-settings")
               // Scroll to sales data section after navigation
               setTimeout(() => {
                 document.getElementById("sales-data")?.scrollIntoView({ behavior: "smooth" })
