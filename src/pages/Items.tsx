@@ -13,6 +13,9 @@ import { loadOrComputeHourMask, type HourMask } from "@/lib/hour-mask"
 import { computeItemMetrics, type ItemMetrics } from "@/lib/compute-item-metrics"
 import { ItemListPanel } from "@/components/ItemListPanel"
 import { ItemDetailsPanel } from "@/components/ItemDetailsPanel"
+import { SevenDayTotalsBarChart } from "@/components/SevenDayTotalsBarChart"
+import { Button } from "@/components/ui/button"
+import { X } from "lucide-react"
 
 export default function Items() {
   const { forecast, selectedItem, setSelectedItem, setForecast } = useForecast()
@@ -127,14 +130,34 @@ export default function Items() {
 
               <div className="flex-1 animate-in slide-in-from-right-8 duration-300">
                 <Card className="h-full">
-                  <ItemDetailsPanel
-                    itemName={selectedItem}
-                    itemMetrics={selectedMetrics}
-                    forecastData={selectedForecastData}
-                    timezone={businessProfile?.timezone || "America/Los_Angeles"}
-                    mode={forecastMode}
-                    onClose={() => setSelectedItem(null)}
-                  />
+                  <div className="p-6 space-y-6 h-full overflow-y-auto">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <h2 className="text-2xl font-bold">{selectedItem}</h2>
+                        <p className="text-sm text-muted-foreground">
+                          {forecastMode === "daily" ? "Next 7 Days" : "Next 24 Hours"} Forecast
+                        </p>
+                      </div>
+                      <Button variant="ghost" size="icon" onClick={() => setSelectedItem(null)}>
+                        <X className="h-5 w-5" />
+                      </Button>
+                    </div>
+
+                    <SevenDayTotalsBarChart
+                      itemMetrics={itemMetrics}
+                      selectedItem={selectedItem}
+                      onItemSelect={setSelectedItem}
+                    />
+
+                    <ItemDetailsPanel
+                      itemName={selectedItem}
+                      itemMetrics={selectedMetrics}
+                      forecastData={selectedForecastData}
+                      timezone={businessProfile?.timezone || "America/Los_Angeles"}
+                      mode={forecastMode}
+                      onClose={() => setSelectedItem(null)}
+                    />
+                  </div>
                 </Card>
               </div>
             </div>
