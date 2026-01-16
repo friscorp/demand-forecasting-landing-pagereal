@@ -54,7 +54,10 @@
     "cmdk": "^1.1.1",
     "date-fns": "^3.6.0",
     "embla-carousel-react": "^8.6.0",
-    "firebase": "^11.1.0",
+    "firebase": "^11.10.0",
+    "firebase-admin": "^13.6.0",
+    "firebase-functions": "^7.0.3",
+    "firebase-tools": "^15.2.1",
     "input-otp": "^1.4.2",
     "jiti": "latest",
     "less": "latest",
@@ -62,7 +65,11 @@
     "lucide-react": "^0.462.0",
     "next": "16.1.1",
     "next-themes": "^0.3.0",
+<<<<<<< HEAD
     "papaparse": "^5.4.1",
+=======
+    "papaparse": "^5.5.3",
+>>>>>>> a6ada87 (Add project files, rework frontend and styling plus firebase config)
     "react": "^18.3.1",
     "react-day-picker": "^8.10.1",
     "react-dom": "^18.3.1",
@@ -88,7 +95,11 @@
     "@eslint/js": "^9.32.0",
     "@tailwindcss/typography": "^0.5.16",
     "@types/node": "^22.16.5",
+<<<<<<< HEAD
     "@types/papaparse": "^5.3.15",
+=======
+    "@types/papaparse": "^5.5.2",
+>>>>>>> a6ada87 (Add project files, rework frontend and styling plus firebase config)
     "@types/react": "^18.3.23",
     "@types/react-dom": "^18.3.7",
     "@vitejs/plugin-react-swc": "^3.11.0",

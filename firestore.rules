@@ -1,0 +1,186 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // ============================================================
+    // HELPER FUNCTIONS
+    // ============================================================
+    
+    // Check if user is authenticated
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    // Check if the document belongs to the authenticated user
+    function isOwner(uid) {
+      return isAuthenticated() && request.auth.uid == uid;
+    }
+    
+    // Check if the incoming data has the correct uid
+    function hasValidUid() {
+      return request.resource.data.uid == request.auth.uid;
+    }
+    
+    // Check if only specific fields are being updated
+    function onlyUpdating(allowedFields) {
+      return request.resource.data.diff(resource.data).affectedKeys().hasOnly(allowedFields);
+    }
+    
+    // ============================================================
+    // BUSINESS PROFILE (1 doc per user)
+    // ============================================================
+    
+    match /business/{uid} {
+      // Users can read and write their own business document
+      allow read: if isOwner(uid);
+      allow create: if isOwner(uid) && hasValidUid();
+      allow update: if isOwner(uid) && hasValidUid();
+      allow delete: if isOwner(uid);
+    }
+    
+    // ============================================================
+    // COLUMN MAPPINGS (1 doc per user)
+    // ============================================================
+    
+    match /columnMappings/{uid} {
+      allow read: if isOwner(uid);
+      allow create: if isOwner(uid) && hasValidUid();
+      allow update: if isOwner(uid) && hasValidUid();
+      allow delete: if isOwner(uid);
+    }
+    
+    // ============================================================
+    // UPLOADS (client creates, server completes ingestion)
+    // ============================================================
+    
+    match /uploads/{uploadId} {
+      allow read: if isAuthenticated() && resource.data.uid == request.auth.uid;
+      
+      // Client can create upload with status "UPLOADED"
+      allow create: if isAuthenticated() 
+        && request.resource.data.uid == request.auth.uid
+        && request.resource.data.status == "UPLOADED";
+      
+      // Client can only update status from UPLOADED to UPLOADED (no-op)
+      // Server functions will update to INGESTING, COMPLETE, FAILED
+      allow update: if isAuthenticated()
+        && resource.data.uid == request.auth.uid
+        && request.resource.data.status == "UPLOADED"
+        && resource.data.status == "UPLOADED";
+      
+      allow delete: if isOwner(resource.data.uid);
+    }
+    
+    // ============================================================
+    // ITEMS (client can rename and toggle active status)
+    // ============================================================
+    
+    match /items/{itemId} {
+      allow read: if isAuthenticated() && resource.data.uid == request.auth.uid;
+      
+      // Server creates items during ingestion
+      allow create: if false;
+      
+      // Client can update canonicalName and isActive only
+      allow update: if isAuthenticated()
+        && resource.data.uid == request.auth.uid
+        && onlyUpdating(['canonicalName', 'isActive', 'updatedAt']);
+      
+      // Prevent deletion (keep for historical data)
+      allow delete: if false;
+    }
+    
+    // ============================================================
+    // ITEM ALIASES (server-managed, client read-only)
+    // ============================================================
+    
+    match /itemAliases/{aliasId} {
+      allow read: if isAuthenticated() && resource.data.uid == request.auth.uid;
+      allow write: if false; // Server-only writes
+    }
+    
+    // ============================================================
+    // SALES DAILY (primarily server-managed via ingestion)
+    // ============================================================
+    
+    match /salesDaily/{docId} {
+      allow read: if isAuthenticated() && resource.data.uid == request.auth.uid;
+      
+      // Allow writes for potential manual entry feature (future)
+      // But primarily managed by server during CSV ingestion
+      allow create: if isAuthenticated() 
+        && request.resource.data.uid == request.auth.uid
+        && hasValidUid();
+      
+      allow update: if isAuthenticated()
+        && resource.data.uid == request.auth.uid
+        && hasValidUid();
+      
+      allow delete: if isOwner(resource.data.uid);
+    }
+    
+    // ============================================================
+    // EVENTS (fully client-managed)
+    // ============================================================
+    
+    match /events/{eventId} {
+      allow read: if isAuthenticated() && resource.data.uid == request.auth.uid;
+      allow create: if isAuthenticated() && hasValidUid();
+      allow update: if isAuthenticated() && resource.data.uid == request.auth.uid && hasValidUid();
+      allow delete: if isOwner(resource.data.uid);
+    }
+    
+    // ============================================================
+    // FORECAST RUNS (server-managed, client read-only)
+    // ============================================================
+    
+    match /forecastRuns/{runId} {
+      allow read: if isAuthenticated() && resource.data.uid == request.auth.uid;
+      allow write: if false; // Server-only writes
+    }
+    
+    // ============================================================
+    // FORECAST PREDICTIONS (server-managed, client read-only)
+    // ============================================================
+    
+    match /forecastPredictions/{docId} {
+      allow read: if isAuthenticated() && resource.data.uid == request.auth.uid;
+      allow write: if false; // Server-only writes
+    }
+    
+    // ============================================================
+    // FORECAST SCORES (server-managed, client read-only)
+    // ============================================================
+    
+    match /forecastScores/{docId} {
+      allow read: if isAuthenticated() && resource.data.uid == request.auth.uid;
+      allow write: if false; // Server-only writes
+    }
+    
+    // ============================================================
+    // INSIGHT CACHE (server-managed, client read-only)
+    // ============================================================
+    
+    match /insightCache/{docId} {
+      allow read: if isAuthenticated() && resource.data.uid == request.auth.uid;
+      allow write: if false; // Server-only writes
+    }
+    
+    // ============================================================
+    // RATE LIMIT (server-managed, client cannot access)
+    // ============================================================
+    
+    match /rateLimit/{docId} {
+      allow read, write: if false; // Server-only, internal use
+    }
+    
+    // ============================================================
+    // DEFAULT DENY ALL (security fallback)
+    // ============================================================
+    
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
