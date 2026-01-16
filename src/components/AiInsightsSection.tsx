@@ -9,6 +9,9 @@ import { fetchWeeklyInsights } from "@/api/ai"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Progress } from "@/components/ui/progress"
 import { Skeleton } from "@/components/ui/skeleton"
+import { loadOrComputeHourMask } from "@/lib/hour-mask"
+import { auth } from "@/lib/firebase"
+import { getLatestHourlyRun } from "@/lib/runs"
 
 type AiInsightsSectionProps = {
   hasForecastData: boolean
@@ -22,6 +25,37 @@ const recommendationIcons = {
   data_quality: Database,
 }
 
+function applyHourMaskToForecast(forecast: any, hourMask: any) {
+  if (!forecast?.results) return forecast
+
+  const filtered: any = { ...forecast, results: {} }
+
+  for (const [item, itemData] of Object.entries(forecast.results)) {
+    if (itemData && typeof itemData === "object" && "forecast" in itemData) {
+      const forecastArray = (itemData as any).forecast
+
+      if (Array.isArray(forecastArray)) {
+        filtered.results[item] = {
+          ...(itemData as any),
+          forecast: forecastArray.filter((point: any) => {
+            const date = new Date(point.ds)
+            const dayOfWeek = date.getDay()
+            const hour = date.getHours()
+
+            const weekdayKeys = ["sun", "mon", "tue", "wed", "thu", "fri", "sat"]
+            const weekdayKey = weekdayKeys[dayOfWeek]
+
+            const allowedHours = hourMask[weekdayKey] || []
+            return allowedHours.includes(hour)
+          }),
+        }
+      }
+    }
+  }
+
+  return filtered
+}
+
 export function AiInsightsSection({ hasForecastData, className = "" }: AiInsightsSectionProps) {
   const [insights, setInsights] = useState<any>(null)
   const [isLoading, setIsLoading] = useState(false)
@@ -32,7 +66,28 @@ export function AiInsightsSection({ hasForecastData, className = "" }: AiInsight
     setError(null)
 
     try {
-      const result = await fetchWeeklyInsights()
+      const user = auth.currentUser
+      if (!user) {
+        throw new Error("User not authenticated")
+      }
+
+      // Fetch latest hourly run
+      const hourlyRun = await getLatestHourlyRun(user.uid)
+
+      let hourlyForecast = null
+      if (hourlyRun?.forecast) {
+        // Load or compute hour mask
+        const hourMask = await loadOrComputeHourMask(user.uid, undefined)
+
+        // Apply hour mask if available
+        if (hourMask) {
+          hourlyForecast = applyHourMaskToForecast(hourlyRun.forecast, hourMask)
+        } else {
+          hourlyForecast = hourlyRun.forecast
+        }
+      }
+
+      const result = await fetchWeeklyInsights(hourlyForecast)
       setInsights(result)
     } catch (err: any) {
       setError(err.message || "Failed to generate insights")
@@ -191,7 +246,14 @@ export function AiInsightsSection({ hasForecastData, className = "" }: AiInsight
                                   : rec.action?.title || rec.action?.detail || "Action"}
                               </p>
                               <p className="text-xs text-muted-foreground">
-                                {typeof rec.why === "string" ? rec.why : rec.why?.detail || rec.why?.title || "Reason"}
+                                {typeof rec.why === "string" ? (
+                                  <p className="text-sm">{rec.why}</p>
+                                ) : (
+                                  <>
+                                    <p className="text-sm font-medium">{rec.why.title}</p>
+                                    <p className="text-sm text-muted-foreground">{rec.why.detail}</p>
+                                  </>
+                                )}
                               </p>
                             </div>
                           </div>

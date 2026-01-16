@@ -82,11 +82,18 @@ async function authedJsonFetch(path: string, options?: RequestInit): Promise<any
 
 const AI_ENDPOINT = "https://us-central1-business-forecast-ea3a5.cloudfunctions.net/askAiHttp"
 
-export async function fetchWeeklyInsights(): Promise<AiInsightResponse> {
+export async function fetchWeeklyInsights(hourlyForecast?: any): Promise<AiInsightResponse> {
   try {
+    const payload: any = { task: "insights_weekly" }
+
+    // Include hourly forecast if provided
+    if (hourlyForecast) {
+      payload.hourlyForecast = hourlyForecast
+    }
+
     const result = await authedJsonFetch(AI_ENDPOINT, {
       method: "POST",
-      body: JSON.stringify({ task: "insights_weekly" }),
+      body: JSON.stringify(payload),
     })
 
     if (!result || !result.short || !result.detailed) {
