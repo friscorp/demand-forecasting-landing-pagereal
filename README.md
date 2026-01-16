@@ -97,7 +97,7 @@ npm run db:reset    # Reset database (⚠️ deletes data)
 - **[Development Guide](docs/DEVELOPMENT.md)** - Complete setup, troubleshooting, and workflow
 - **[API Documentation](api/README.md)** - Backend API details and usage
 
-## 🐛 Common Issues
+## 🐛 Common Issuesasdf
 
 ### Port Already in Use
 
