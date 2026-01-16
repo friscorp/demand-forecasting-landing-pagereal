@@ -12,6 +12,7 @@ import { db } from "@/lib/firebase"
 import { collection, addDoc, query, orderBy, limit, getDocs, serverTimestamp } from "firebase/firestore"
 import { useNavigate } from "react-router-dom"
 import { ingestCsv, forecastFromDb, saveRun, forecastHourly, saveRunHourly } from "@/lib/api"
+import { getLatestDailyRun, getLatestHourlyRun } from "@/lib/runs"
 
 interface UploadDoc {
   id: string
@@ -185,6 +186,8 @@ export function SalesDataUploadSection() {
         insights: null,
       })
 
+      await getLatestDailyRun(user.uid)
+
       // Step 4: Generate hourly forecast
       try {
         const hourlyForecast = await forecastHourly({ horizonDays: 7 })
@@ -196,6 +199,8 @@ export function SalesDataUploadSection() {
           forecast: hourlyForecast,
           insights: null,
         })
+
+        await getLatestHourlyRun(user.uid)
       } catch (hourlyError) {
         console.error("hourly forecast failed (non-blocking):", hourlyError)
       }

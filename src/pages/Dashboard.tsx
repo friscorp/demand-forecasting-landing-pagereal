@@ -21,7 +21,8 @@ import { useNavigate } from "react-router-dom"
 import { AuthStatus } from "@/components/auth-status"
 import { useEffect, useState } from "react"
 import { useAuth } from "@/lib/auth-context"
-import { latestRun, latestRunHourly, forecastHourly, saveRunHourly } from "@/lib/api"
+import { forecastHourly, saveRunHourly } from "@/lib/api"
+import { getLatestDailyRun, getLatestHourlyRun } from "@/lib/runs"
 import { db } from "@/lib/firebase"
 import { doc, getDoc } from "firebase/firestore"
 import { Alert, AlertDescription } from "@/components/ui/alert"
@@ -89,7 +90,7 @@ export default function Dashboard() {
       }
 
       try {
-        const run = await latestRun()
+        const run = await getLatestDailyRun(user.uid)
 
         if (run && run.forecast && run.forecast.results) {
           setForecast(run.forecast)
@@ -100,7 +101,7 @@ export default function Dashboard() {
           }
         }
       } catch (error) {
-        console.error("latestRun error:", error)
+        console.error("error loading daily run:", error)
       } finally {
         setIsLoadingRun(false)
       }
@@ -116,7 +117,7 @@ export default function Dashboard() {
 
       setIsLoadingHourly(true)
       try {
-        const hourlyRun = await latestRunHourly()
+        const hourlyRun = await getLatestHourlyRun(user.uid)
 
         if (hourlyRun && hourlyRun.forecast && hourlyRun.forecast.results) {
           setHourlyForecast(hourlyRun.forecast)
@@ -159,7 +160,7 @@ export default function Dashboard() {
         insights: null,
       })
 
-      const latest = await latestRunHourly()
+      const latest = await getLatestHourlyRun(user.uid)
 
       if (latest && latest.forecast && latest.forecast.results) {
         setHourlyForecast(latest.forecast)

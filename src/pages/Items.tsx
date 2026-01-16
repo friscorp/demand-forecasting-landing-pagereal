@@ -6,7 +6,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Package } from "lucide-react"
 import { useState, useEffect } from "react"
 import { useAuth } from "@/lib/auth-context"
-import { latestRun, latestRunHourly } from "@/lib/api"
+import { getLatestDailyRun, getLatestHourlyRun } from "@/lib/runs"
 import { db } from "@/lib/firebase"
 import { doc, getDoc } from "firebase/firestore"
 import { loadOrComputeHourMask, type HourMask } from "@/lib/hour-mask"
@@ -40,13 +40,13 @@ export default function Items() {
         }
 
         if (!forecast) {
-          const run = await latestRun()
+          const run = await getLatestDailyRun(user.uid)
           if (run && run.forecast) {
             setForecast(run.forecast)
           }
         }
 
-        const hourlyRun = await latestRunHourly()
+        const hourlyRun = await getLatestHourlyRun(user.uid)
         if (hourlyRun && hourlyRun.forecast) {
           setHourlyForecast(hourlyRun.forecast)
         }
