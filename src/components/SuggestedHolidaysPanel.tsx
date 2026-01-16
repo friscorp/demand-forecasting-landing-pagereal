@@ -1,13 +1,14 @@
 "use client"
 
 import { useState, useEffect } from "react"
+import { useNavigate } from "react-router-dom"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Badge } from "@/components/ui/badge"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { Calendar, Loader2, AlertCircle, CheckCircle, Sparkles } from "lucide-react"
+import { Calendar, Loader2, AlertCircle, CheckCircle, Sparkles, ExternalLink } from "lucide-react"
 import { auth, db } from "@/lib/firebase"
 import { doc, getDoc, updateDoc, arrayUnion } from "firebase/firestore"
 
@@ -48,6 +49,7 @@ async function fetchSuggestedHolidays(region: string, years: number[]): Promise<
 }
 
 export function SuggestedHolidaysPanel() {
+  const navigate = useNavigate()
   const [region, setRegion] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
@@ -147,12 +149,22 @@ export function SuggestedHolidaysPanel() {
 
   return (
     <Card id="holidays-section">
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <Calendar className="h-5 w-5" />
-          Suggested Holidays
-        </CardTitle>
-        <CardDescription>AI-generated holiday suggestions based on your region</CardDescription>
+      <CardHeader className="flex flex-row items-center justify-between">
+        <div>
+          <CardTitle className="flex items-center gap-2">
+            <Calendar className="h-5 w-5" />
+            Suggested Holidays
+          </CardTitle>
+          <CardDescription>AI-generated holiday suggestions based on your region</CardDescription>
+        </div>
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => navigate("/business-info")}
+          className="text-xs text-muted-foreground hover:text-foreground"
+        >
+          <ExternalLink className="h-4 w-4" />
+        </Button>
       </CardHeader>
       <CardContent className="space-y-4">
         {!region && (
