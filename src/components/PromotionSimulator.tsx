@@ -80,14 +80,14 @@ export function PromotionSimulator({ selectedItem, items = [] }: PromotionSimula
         offer: offer || null,
         channel,
         multiplier: result.multiplier,
-        confidence: result.confidence,
-        rating_0to10: result.rating_0to10 || 0,
+        confidence: result.confidence ?? 0,
+        rating_0to10: result.rating_0to10 ?? 0,
         metrics: {
-          expectedLiftPct: result.promo?.estimatedLiftPct || 0,
-          baselineUnitsEstimate: result.promo?.baselineUnitsEstimate,
-          promoUnitsEstimate: result.promo?.promoUnitsEstimate,
+          expectedLiftPct: result.promo?.estimatedLiftPct ?? 0,
+          baselineUnitsEstimate: result.promo?.baselineUnitsEstimate ?? null,
+          promoUnitsEstimate: result.promo?.promoUnitsEstimate ?? null,
         },
-        warnings: result.risks || [],
+        warnings: result.risks ?? [],
       })
 
       setApplied(true)

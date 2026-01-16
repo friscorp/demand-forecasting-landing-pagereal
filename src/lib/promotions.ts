@@ -13,6 +13,13 @@ import {
 } from "firebase/firestore"
 import type { Promotion } from "./applyPromotionsToForecast"
 
+/**
+ * Strip undefined values from an object (Firestore doesn't allow undefined)
+ */
+function stripUndefined<T>(obj: T): T {
+  return JSON.parse(JSON.stringify(obj))
+}
+
 export interface PromotionInput {
   item: string | null
   start: string
@@ -36,12 +43,25 @@ export interface PromotionInput {
 export async function savePromotion(uid: string, promotionData: PromotionInput): Promise<string> {
   const promotionsRef = collection(db, "users", uid, "promotions")
 
-  const newPromo = {
-    ...promotionData,
+  const newPromo = stripUndefined({
     status: "active",
+    item: promotionData.item ?? null,
+    start: promotionData.start,
+    end: promotionData.end,
+    offer: promotionData.offer ?? null,
+    channel: promotionData.channel ?? null,
+    multiplier: promotionData.multiplier,
+    confidence: promotionData.confidence,
+    rating_0to10: promotionData.rating_0to10,
+    metrics: {
+      expectedLiftPct: promotionData.metrics?.expectedLiftPct ?? 0,
+      baselineUnitsEstimate: promotionData.metrics?.baselineUnitsEstimate ?? null,
+      promoUnitsEstimate: promotionData.metrics?.promoUnitsEstimate ?? null,
+    },
+    warnings: promotionData.warnings ?? [],
     createdAt: serverTimestamp(),
     updatedAt: serverTimestamp(),
-  }
+  })
 
   const docRef = await addDoc(promotionsRef, newPromo)
 
