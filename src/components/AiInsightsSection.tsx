@@ -185,8 +185,14 @@ export function AiInsightsSection({ hasForecastData, className = "" }: AiInsight
                                   <span className="text-xs font-medium text-muted-foreground">• {rec.item}</span>
                                 )}
                               </div>
-                              <p className="text-sm font-medium">{rec.action}</p>
-                              <p className="text-xs text-muted-foreground">{rec.why}</p>
+                              <p className="text-sm font-medium">
+                                {typeof rec.action === "string"
+                                  ? rec.action
+                                  : rec.action?.title || rec.action?.detail || "Action"}
+                              </p>
+                              <p className="text-xs text-muted-foreground">
+                                {typeof rec.why === "string" ? rec.why : rec.why?.detail || rec.why?.title || "Reason"}
+                              </p>
                             </div>
                           </div>
                         </CardContent>
