@@ -188,43 +188,51 @@ export function HistoryCompare({ items, selectedItem }: HistoryCompareProps) {
               <h4 className="font-semibold">
                 {compareResult.item} - {compareResult.monthDay}
               </h4>
-              <div className="border rounded-lg overflow-hidden">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Hour</TableHead>
-                      {Object.keys(compareResult.years)
-                        .sort()
-                        .map((year) => (
-                          <TableHead key={year} className="text-right">
-                            {year}
-                          </TableHead>
-                        ))}
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {Array.from({ length: 24 }, (_, i) => i).map((hour) => {
-                      const hourStr = hour.toString().padStart(2, "0") + ":00"
-                      return (
-                        <TableRow key={hour}>
-                          <TableCell className="font-medium">{hourStr}</TableCell>
-                          {Object.keys(compareResult.years)
-                            .sort()
-                            .map((year) => {
-                              const yearData = compareResult.years[year]
-                              const dataPoint = yearData.find((d) => d.hour === hour)
-                              return (
-                                <TableCell key={year} className="text-right">
-                                  {dataPoint ? Math.round(dataPoint.actual) : "-"}
-                                </TableCell>
-                              )
-                            })}
-                        </TableRow>
-                      )
-                    })}
-                  </TableBody>
-                </Table>
-              </div>
+              {compareResult.years && Object.keys(compareResult.years).length > 0 ? (
+                <div className="border rounded-lg overflow-hidden">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Hour</TableHead>
+                        {Object.keys(compareResult.years)
+                          .sort()
+                          .map((year) => (
+                            <TableHead key={year} className="text-right">
+                              {year}
+                            </TableHead>
+                          ))}
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {Array.from({ length: 24 }, (_, i) => i).map((hour) => {
+                        const hourStr = hour.toString().padStart(2, "0") + ":00"
+                        return (
+                          <TableRow key={hour}>
+                            <TableCell className="font-medium">{hourStr}</TableCell>
+                            {Object.keys(compareResult.years)
+                              .sort()
+                              .map((year) => {
+                                const yearData = compareResult.years[year]
+                                const dataPoint = yearData.find((d) => d.hour === hour)
+                                return (
+                                  <TableCell key={year} className="text-right">
+                                    {dataPoint ? Math.round(dataPoint.actual) : "-"}
+                                  </TableCell>
+                                )
+                              })}
+                          </TableRow>
+                        )
+                      })}
+                    </TableBody>
+                  </Table>
+                </div>
+              ) : (
+                <Alert>
+                  <AlertDescription>
+                    No historical data found for this date. Try ingesting your upload data first.
+                  </AlertDescription>
+                </Alert>
+              )}
             </div>
           )}
         </CardContent>
