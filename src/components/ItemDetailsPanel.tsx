@@ -44,6 +44,7 @@ export function ItemDetailsPanel({
       forecast: Math.round(point.yhat),
       lower: Math.round(point.yhat_lower),
       upper: Math.round(point.yhat_upper),
+      average: Math.round((point.yhat_upper + point.yhat_lower) / 2),
       timestamp: point.ds,
     }
   })
@@ -52,6 +53,10 @@ export function ItemDetailsPanel({
     forecast: {
       label: "Forecast",
       color: "hsl(var(--primary))",
+    },
+    average: {
+      label: "Average",
+      color: "#3EB489",
     },
     lower: {
       label: "Lower Bound",
@@ -123,6 +128,14 @@ export function ItemDetailsPanel({
                   <Area type="monotone" dataKey="lower" stroke="none" fill="hsl(var(--muted))" fillOpacity={0.3} />
                   <Area type="monotone" dataKey="upper" stroke="none" fill="hsl(var(--muted))" fillOpacity={0.3} />
                   <Line type="monotone" dataKey="forecast" stroke="hsl(var(--primary))" strokeWidth={2} dot={false} />
+                  <Line
+                    type="monotone"
+                    dataKey="average"
+                    stroke="#3EB489"
+                    strokeWidth={2}
+                    strokeDasharray="5 5"
+                    dot={false}
+                  />
                 </AreaChart>
               </ResponsiveContainer>
             </ChartContainer>
