@@ -50,14 +50,11 @@ const HeroSection = () => {
       if (run && run.forecast && run.forecast.results) {
         setForecast(run.forecast)
         updateData({ businessName: run.businessName })
-        console.log("[v0] Dashboard state restored from run:", run.id)
-      } else {
-        console.log("[v0] No saved forecast found, showing empty dashboard")
       }
 
       navigate("/dashboard")
     } catch (error) {
-      console.error("[v0] Failed to load latest run:", error)
+      console.error("failed to load latest run:", error)
       navigate("/dashboard")
     } finally {
       setIsLoadingRun(false)
@@ -66,7 +63,6 @@ const HeroSection = () => {
 
   return (
     <section className="relative min-h-screen w-full overflow-hidden">
-      {/* Background Image */}
       <div
         className="absolute inset-0 bg-cover bg-center bg-no-repeat"
         style={{ backgroundImage: `url(${heroBackground})` }}
@@ -74,16 +70,13 @@ const HeroSection = () => {
         <div className="absolute inset-0 bg-gradient-to-r from-background/95 via-background/70 to-transparent" />
       </div>
 
-      {/* Auth Status */}
       <div className="absolute right-6 top-6 z-20">
         <AuthStatus />
       </div>
 
-      {/* Content */}
       <div className="relative z-10 flex min-h-screen items-center">
         <div className="container mx-auto px-6 lg:px-12">
           <div className="max-w-2xl">
-            {/* Headline */}
             <h1 className="mb-6 text-5xl font-bold leading-tight tracking-tight text-secondary md:text-6xl lg:text-7xl">
               Forecast
               <br />
@@ -92,7 +85,6 @@ const HeroSection = () => {
               <span className="text-primary">with AI.</span>
             </h1>
 
-            {/* Description */}
             <p className="mb-10 text-lg leading-relaxed text-muted-foreground md:text-xl">
               Unlock powerful AI-driven insights for your business.
               <br />
@@ -101,7 +93,6 @@ const HeroSection = () => {
               smarter decisions—all in one platform.
             </p>
 
-            {/* Business Name Input */}
             <form onSubmit={handleSubmit} className="max-w-md">
               <div className="flex items-center gap-0 rounded-full bg-card p-2 shadow-lg ring-1 ring-border/50">
                 <div className="flex items-center gap-3 pl-4">

@@ -28,6 +28,7 @@ import { HourlyForecastTable } from "@/components/HourlyForecastTable"
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { loadOrComputeHourMask, type HourMask } from "@/lib/hour-mask"
 import { BackgroundForecastChart } from "@/components/BackgroundForecastChart"
+import { HistoryCompare } from "@/components/HistoryCompare"
 
 export default function Dashboard() {
   const { forecast, selectedItem, setSelectedItem, setForecast } = useForecast()
@@ -54,7 +55,6 @@ export default function Dashboard() {
       if (authLoading) return
 
       if (!user) {
-        console.log("[v0] Dashboard: user not authenticated")
         setIsLoadingRun(false)
         setIsLoadingProfile(false)
         return
@@ -65,7 +65,6 @@ export default function Dashboard() {
         if (profileDoc.exists()) {
           const profile = profileDoc.data()
           setBusinessProfile(profile)
-          console.log("[v0] Dashboard: business profile loaded", profile)
 
           const requiredFields = ["name", "category", "timezone"]
           const isIncomplete = requiredFields.some((field) => !profile[field])
@@ -73,39 +72,34 @@ export default function Dashboard() {
             setShowSetupBanner(true)
           }
         } else {
-          console.log("[v0] Dashboard: no business profile found")
           setShowSetupBanner(true)
         }
       } catch (error) {
-        console.error("[v0] Dashboard: error fetching business profile:", error)
+        console.error("error fetching business profile:", error)
         setShowSetupBanner(true)
       } finally {
         setIsLoadingProfile(false)
       }
 
       if (forecast && forecast.results) {
-        console.log("[v0] Dashboard: forecast already in context")
         setIsLoadingRun(false)
         setIsSynced(true)
         return
       }
 
       try {
-        console.log("[v0] Dashboard: calling latestRun...")
         const run = await latestRun()
 
         if (run && run.forecast && run.forecast.results) {
-          console.log("[v0] Dashboard: latestRun success, items:", Object.keys(run.forecast.results))
           setForecast(run.forecast)
           setIsSynced(true)
         } else {
-          console.log("[v0] Dashboard: no run found or missing forecast data")
           if (!businessProfile) {
             setShowSetupBanner(true)
           }
         }
       } catch (error) {
-        console.error("[v0] Dashboard: latestRun error:", error)
+        console.error("latestRun error:", error)
       } finally {
         setIsLoadingRun(false)
       }
@@ -117,34 +111,23 @@ export default function Dashboard() {
   useEffect(() => {
     const loadHourlyData = async () => {
       if (forecastMode !== "hourly" || !user || authLoading) return
-      if (hourlyForecast) return // Already loaded
+      if (hourlyForecast) return
 
       setIsLoadingHourly(true)
       try {
-        console.log("[v0] Dashboard: loading hourly forecast...")
         const hourlyRun = await latestRunHourly()
 
         if (hourlyRun && hourlyRun.forecast && hourlyRun.forecast.results) {
-          console.log("[v0] Dashboard: hourly forecast loaded, items:", Object.keys(hourlyRun.forecast.results))
           setHourlyForecast(hourlyRun.forecast)
           setHourlyItems(Object.keys(hourlyRun.forecast.results))
 
           if (businessProfile) {
-            console.log("[v0] Dashboard: calling loadOrComputeHourMask with businessProfile:", {
-              hasHours: !!businessProfile.hours,
-              timezone: businessProfile.timezone,
-            })
             const mask = await loadOrComputeHourMask(user.uid, businessProfile.hours, businessProfile.timezone)
-            console.log("[v0] Dashboard: hour mask loaded/computed:", mask)
             setHourMask(mask)
-          } else {
-            console.log("[v0] Dashboard: no businessProfile available, skipping hour mask")
           }
-        } else {
-          console.log("[v0] Dashboard: no hourly forecast found")
         }
       } catch (error) {
-        console.error("[v0] Dashboard: error loading hourly forecast:", error)
+        console.error("error loading hourly forecast:", error)
       } finally {
         setIsLoadingHourly(false)
       }
@@ -163,8 +146,6 @@ export default function Dashboard() {
     setHourlyGenerateError(null)
 
     try {
-      console.log("[v0] Dashboard: generating hourly forecast...")
-
       const hourlyResult = await forecastHourly({ horizonDays: 7 })
 
       const businessName = businessProfile.name || "Business"
@@ -180,7 +161,6 @@ export default function Dashboard() {
       const latest = await latestRunHourly()
 
       if (latest && latest.forecast && latest.forecast.results) {
-        console.log("[v0] Dashboard: hourly forecast saved and loaded successfully")
         setHourlyForecast(latest.forecast)
         setHourlyItems(Object.keys(latest.forecast.results))
 
@@ -190,7 +170,7 @@ export default function Dashboard() {
         }
       }
     } catch (error: any) {
-      console.error("[v0] Dashboard: error generating hourly forecast:", error)
+      console.error("error generating hourly forecast:", error)
       setHourlyGenerateError(error.message || "Failed to generate hourly forecast")
     } finally {
       setIsGeneratingHourly(false)
@@ -446,6 +426,10 @@ export default function Dashboard() {
             )}
           </CardContent>
         </Card>
+
+        {forecastMode === "hourly" && hasHourlyData && (
+          <HistoryCompare items={hourlyItems} selectedItem={currentHourlyItem} />
+        )}
       </div>
     </div>
   )

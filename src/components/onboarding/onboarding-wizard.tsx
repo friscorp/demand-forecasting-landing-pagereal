@@ -123,16 +123,14 @@ export function OnboardingWizard() {
 
     try {
       const forecastResponse = await forecastFromDb({ horizonDays: 7 })
-      console.log("[v0] Raw forecast response from callable:", forecastResponse)
 
       if (!forecastResponse || !forecastResponse.results) {
-        console.error("[v0] Invalid forecast response - missing .results field:", forecastResponse)
+        console.error("invalid forecast response - missing .results field:", forecastResponse)
         setForecastError("Forecast generation failed (invalid response). Expected {mode, results}.")
         setIsForecastingDB(false)
         return
       }
 
-      console.log("[v0] Forecast validation passed. Results items:", Object.keys(forecastResponse.results))
       setLastForecastResponse(forecastResponse)
       setForecast(forecastResponse)
 
@@ -145,29 +143,24 @@ export function OnboardingWizard() {
             }
           : {}
 
-        const runResponse = await saveRun({
+        await saveRun({
           businessName: data.businessName || "My Business",
           mapping,
           forecast: forecastResponse,
           insights: null,
         })
 
-        console.log("[v0] saveRun success:", runResponse)
-
-        console.log("[v0] Starting hourly forecast generation...")
         try {
           const hourlyForecastResponse = await forecastHourly({ horizonDays: 7 })
-          console.log("[v0] Hourly forecast generated:", hourlyForecastResponse)
 
-          const hourlyRunResponse = await saveRunHourly({
+          await saveRunHourly({
             businessName: data.businessName || "My Business",
             mapping,
             forecast: hourlyForecastResponse,
             insights: null,
           })
-          console.log("[v0] saveRunHourly success:", hourlyRunResponse)
         } catch (hourlyError) {
-          console.error("[v0] Hourly forecast failed (non-blocking):", hourlyError)
+          console.error("hourly forecast failed (non-blocking):", hourlyError)
         }
 
         setIsSavingProfile(true)
@@ -187,10 +180,9 @@ export function OnboardingWizard() {
               recipeMapping: data.recipeMapping,
             },
           })
-          console.log("[v0] Business profile saved successfully")
           setProfileSaveSuccess("Business setup saved")
         } catch (profileError) {
-          console.error("[v0] Failed to save business profile:", profileError)
+          console.error("failed to save business profile:", profileError)
           setProfileSaveError("Couldn't save business setup. Please try again.")
           setIsSavingProfile(false)
           setIsForecastingDB(false)
@@ -203,13 +195,13 @@ export function OnboardingWizard() {
 
         navigate("/dashboard")
       } catch (saveError) {
-        console.error("[v0] saveRun failed:", saveError)
+        console.error("saveRun failed:", saveError)
         setForecastError("Could not sync forecast. Retry?")
         setIsForecastingDB(false)
         return
       }
     } catch (error) {
-      console.error("[v0] Forecast error:", error)
+      console.error("forecast error:", error)
       setForecastError(error instanceof Error ? error.message : "Failed to generate forecast. Please try again.")
     } finally {
       setIsForecastingDB(false)
@@ -220,7 +212,7 @@ export function OnboardingWizard() {
     if (!lastForecastResponse) return
 
     if (!lastForecastResponse.results) {
-      console.error("[v0] Cannot retry save - forecast missing .results:", lastForecastResponse)
+      console.error("cannot retry save - forecast missing .results:", lastForecastResponse)
       setForecastError("Cannot save - invalid forecast data")
       return
     }
@@ -237,18 +229,17 @@ export function OnboardingWizard() {
           }
         : {}
 
-      const runResponse = await saveRun({
+      await saveRun({
         businessName: data.businessName || "My Business",
         mapping,
         forecast: lastForecastResponse,
         insights: null,
       })
 
-      console.log("[v0] saveRun (retry) success:", runResponse)
       resetOnboarding()
       navigate("/dashboard")
     } catch (error) {
-      console.error("[v0] Retry save failed:", error)
+      console.error("retry save failed:", error)
       setForecastError("Could not sync. Please try again.")
     } finally {
       setIsRetryingSave(false)
@@ -302,7 +293,6 @@ export function OnboardingWizard() {
 
   return (
     <div className="container mx-auto max-w-4xl px-4 py-12">
-      {/* Progress Bar */}
       <div className="mb-8">
         <div className="mb-4 flex items-center justify-between">
           <h2 className="text-sm font-medium text-muted-foreground">
@@ -318,10 +308,8 @@ export function OnboardingWizard() {
         </div>
       </div>
 
-      {/* Step Title */}
       <h1 className="mb-8 text-3xl font-bold text-secondary">{steps[currentStep].title}</h1>
 
-      {/* Step Content */}
       <div className="mb-8">
         <CurrentStepComponent />
       </div>
@@ -370,7 +358,6 @@ export function OnboardingWizard() {
         </div>
       )}
 
-      {/* Navigation */}
       <div className="flex items-center justify-between">
         <Button
           variant="outline"

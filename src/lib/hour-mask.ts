@@ -54,17 +54,13 @@ function convertBusinessHoursToOpenMap(hours?: FirestoreBusinessHours): Record<W
   }
 
   if (!hours) {
-    console.log("[v0] HourMask: no businessHours provided, treating all days as open")
     return result
   }
-
-  console.log("[v0] HourMask: converting businessHours:", JSON.stringify(hours))
 
   for (const [fullDay, abbrev] of Object.entries(fullDayToAbbrev)) {
     const dayData = hours[fullDay as keyof FirestoreBusinessHours]
     if (dayData) {
       result[abbrev] = dayData.enabled === true
-      console.log(`[v0] HourMask: ${fullDay} -> ${abbrev}, enabled=${dayData.enabled}`)
     }
   }
 
@@ -75,8 +71,6 @@ function convertBusinessHoursToOpenMap(hours?: FirestoreBusinessHours): Record<W
  * Fetch the latest upload document for a user from Firestore
  */
 export async function fetchLatestUpload(userId: string): Promise<UploadDoc | null> {
-  console.log("[v0] HourMask: fetching latest upload for userId:", userId)
-
   try {
     const uploadsRef = collection(db, "users", userId, "uploads")
     const q = query(uploadsRef, orderBy("lastUsedAt", "desc"), limit(1))
@@ -90,21 +84,15 @@ export async function fetchLatestUpload(userId: string): Promise<UploadDoc | nul
     }
 
     if (snapshot.empty) {
-      console.log("[v0] HourMask: no uploads found in users/{userId}/uploads")
       return null
     }
 
     const uploadDoc = snapshot.docs[0]
     const data = uploadDoc.data() as UploadDoc
 
-    console.log(
-      "[v0] HourMask: found upload doc with fileHash:",
-      data.fileHash,
-      "at path: users/" + userId + "/uploads/" + uploadDoc.id,
-    )
     return { ...data, id: uploadDoc.id } as any
   } catch (error) {
-    console.error("[v0] HourMask: error fetching latest upload:", error)
+    console.error("error fetching latest upload:", error)
     return null
   }
 }
@@ -182,8 +170,6 @@ export function computeHourMaskFromCsv(
   businessHours?: FirestoreBusinessHours,
   timezone = "America/Los_Angeles",
 ): { hourMaskV1: HourMask; hourMaskCountsV1: HourCounts } {
-  console.log("[v0] HourMask: computing mask from CSV (threshold=2)")
-
   const openDays = convertBusinessHoursToOpenMap(businessHours)
 
   const hourCounts: HourCounts = {
@@ -214,18 +200,16 @@ export function computeHourMaskFromCsv(
   })
 
   if (parsed.errors.length > 0) {
-    console.warn("[v0] HourMask: CSV parse warnings:", parsed.errors)
+    console.warn("CSV parse warnings:", parsed.errors)
   }
 
   const rows = parsed.data as any[]
 
   if (rows.length === 0) {
-    console.log("[v0] HourMask: CSV has no data rows")
     return { hourMaskV1: {} as HourMask, hourMaskCountsV1: hourCounts }
   }
 
   const dateColumn = mapping.date
-  console.log("[v0] HourMask: processing", rows.length, "rows, date column:", dateColumn)
 
   // Process rows
   for (const row of rows) {
@@ -240,16 +224,6 @@ export function computeHourMaskFromCsv(
       distinctDays[weekdayKey].add(dayKey)
     }
   }
-
-  console.log("[v0] HourMask: distinct days per weekday:", {
-    sun: distinctDays.sun.size,
-    mon: distinctDays.mon.size,
-    tue: distinctDays.tue.size,
-    wed: distinctDays.wed.size,
-    thu: distinctDays.thu.size,
-    fri: distinctDays.fri.size,
-    sat: distinctDays.sat.size,
-  })
 
   // Build mask with threshold
   const hourMaskV1: HourMask = {
@@ -268,18 +242,12 @@ export function computeHourMaskFromCsv(
     const isOpen = openDays[weekdayKey]
 
     if (!isOpen) {
-      console.log(`[v0] HourMask: ${weekdayKey} - closed (businessHours says disabled)`)
       hourMaskV1[weekdayKey] = []
       continue
     }
 
     const dayCount = distinctDays[weekdayKey].size
     const threshold = Math.max(2, Math.ceil(dayCount * 0.4))
-
-    console.log(
-      `[v0] HourMask: ${weekdayKey} - OPEN, ${dayCount} distinct days, threshold=${threshold}, counts:`,
-      hourCounts[weekdayKey],
-    )
 
     for (const hourStr in hourCounts[weekdayKey]) {
       const hour = Number.parseInt(hourStr, 10)
@@ -294,7 +262,6 @@ export function computeHourMaskFromCsv(
     hourMaskV1[weekdayKey].sort((a, b) => a - b)
   }
 
-  console.log("[v0] HourMask: final computed mask:", JSON.stringify(hourMaskV1))
   return { hourMaskV1, hourMaskCountsV1: hourCounts }
 }
 
@@ -307,8 +274,6 @@ export async function saveHourMaskToFirestore(
   hourMaskV1: HourMask,
   hourMaskCountsV1: HourCounts,
 ): Promise<void> {
-  console.log("[v0] HourMask: saving mask to Firestore at users/" + userId + "/uploads/" + uploadDocId)
-
   try {
     const uploadRef = doc(db, "users", userId, "uploads", uploadDocId)
     await setDoc(
@@ -320,9 +285,8 @@ export async function saveHourMaskToFirestore(
       },
       { merge: true },
     )
-    console.log("[v0] HourMask: successfully saved mask to Firestore")
   } catch (error) {
-    console.warn("[v0] HourMask: failed to save mask to Firestore:", error)
+    console.warn("failed to save mask to Firestore:", error)
   }
 }
 
@@ -334,31 +298,19 @@ export async function loadOrComputeHourMask(
   businessHours?: FirestoreBusinessHours,
   timezone?: string,
 ): Promise<HourMask | null> {
-  console.log("[v0] HourMask: loadOrComputeHourMask called for userId:", userId)
-  console.log("[v0] HourMask: businessHours received:", JSON.stringify(businessHours))
-
   const upload = await fetchLatestUpload(userId)
 
   if (!upload) {
-    console.log("[v0] HourMask: no upload found")
     return null
   }
 
   // Check if mask already exists AND is valid (has at least one hour)
   if (upload.hourMaskV1 && isHourMaskValid(upload.hourMaskV1)) {
-    console.log("[v0] HourMask: using valid cached mask from upload doc:", JSON.stringify(upload.hourMaskV1))
     return upload.hourMaskV1
-  }
-
-  if (upload.hourMaskV1) {
-    console.log("[v0] HourMask: cached mask is invalid (all empty), recomputing...")
-  } else {
-    console.log("[v0] HourMask: no cached mask found, computing from CSV...")
   }
 
   // Compute mask from CSV
   if (!upload.csvText || !upload.mapping) {
-    console.log("[v0] HourMask: upload missing csvText or mapping")
     return null
   }
 
@@ -371,7 +323,6 @@ export async function loadOrComputeHourMask(
 
   // Save back to Firestore
   if ((upload as any).id) {
-    console.log("[v0] HourMask: saving computed mask to Firestore for uploadDocId:", (upload as any).id)
     await saveHourMaskToFirestore(userId, (upload as any).id, hourMaskV1, hourMaskCountsV1)
   }
 
