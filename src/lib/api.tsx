@@ -21,6 +21,7 @@ export interface IngestResponse {
 
 export interface ForecastRequest {
   horizonDays: number
+  hourMask?: Record<string, number[]> // Added hourMask to request
 }
 
 export interface ForecastPoint {
@@ -294,7 +295,7 @@ export async function forecastHourly(data: ForecastRequest): Promise<ForecastRes
       "https://us-central1-business-forecast-ea3a5.cloudfunctions.net/forecastHourlyFromDbHttp",
       {
         method: "POST",
-        body: JSON.stringify(data),
+        body: JSON.stringify(data), // Now includes hourMask if provided
       },
     )
 

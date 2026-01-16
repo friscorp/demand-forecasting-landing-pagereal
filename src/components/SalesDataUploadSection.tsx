@@ -13,6 +13,8 @@ import { collection, addDoc, query, orderBy, limit, getDocs, serverTimestamp } f
 import { useNavigate } from "react-router-dom"
 import { ingestCsv, forecastFromDb, saveRun, forecastHourly, saveRunHourly } from "@/lib/api"
 import { getLatestDailyRun, getLatestHourlyRun } from "@/lib/runs"
+import { loadOrComputeHourMask } from "@/lib/hour-mask"
+import { doc, getDoc } from "firebase/firestore"
 
 interface UploadDoc {
   id: string
@@ -190,7 +192,31 @@ export function SalesDataUploadSection() {
 
       // Step 4: Generate hourly forecast
       try {
-        const hourlyForecast = await forecastHourly({ horizonDays: 7 })
+        // Fetch business profile to get hours and timezone
+        let hourMask = null
+        let businessHours = null
+        let timezone = undefined
+
+        try {
+          const profileDoc = await getDoc(doc(db, "businesses", user.uid))
+          if (profileDoc.exists()) {
+            const profile = profileDoc.data()
+            businessHours = profile.hours
+            timezone = profile.timezone
+          }
+
+          if (businessHours) {
+            hourMask = await loadOrComputeHourMask(user.uid, businessHours, timezone)
+          }
+        } catch (maskError) {
+          console.error("Failed to load hour mask (non-blocking):", maskError)
+        }
+
+        // Include hourMask in the hourly forecast request
+        const hourlyForecast = await forecastHourly({
+          horizonDays: 7,
+          hourMask: hourMask || undefined,
+        })
 
         // Step 5: Save hourly forecast
         await saveRunHourly({

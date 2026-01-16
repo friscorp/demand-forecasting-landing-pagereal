@@ -13,6 +13,7 @@ import { StepEvents } from "./steps/step-events"
 import { StepRecipeMapping } from "./steps/step-recipe-mapping"
 import { StepGenerateForecast } from "./steps/step-generate-forecast"
 import { ingestCsv, forecastFromDb, saveRun, saveBusinessProfile, forecastHourly, saveRunHourly } from "@/lib/api"
+import { loadOrComputeHourMask } from "@/lib/hour-mask"
 import { useState } from "react"
 import { AuthModal } from "@/components/auth-modal"
 import { useNavigate } from "react-router-dom"
@@ -151,7 +152,19 @@ export function OnboardingWizard() {
         })
 
         try {
-          const hourlyForecastResponse = await forecastHourly({ horizonDays: 7 })
+          let hourMask = null
+          try {
+            if (user) {
+              hourMask = await loadOrComputeHourMask(user.uid, data.hours, data.timezone)
+            }
+          } catch (maskError) {
+            console.error("Failed to load hour mask (non-blocking):", maskError)
+          }
+
+          const hourlyForecastResponse = await forecastHourly({
+            horizonDays: 7,
+            hourMask: hourMask || undefined,
+          })
 
           await saveRunHourly({
             businessName: data.businessName || "My Business",

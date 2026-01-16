@@ -151,7 +151,18 @@ export default function Dashboard() {
     setHourlyGenerateError(null)
 
     try {
-      const hourlyResult = await forecastHourly({ horizonDays: 7 })
+      let hourMask: HourMask | null = null
+      try {
+        hourMask = await loadOrComputeHourMask(user.uid, businessProfile.hours, businessProfile.timezone)
+      } catch (maskError) {
+        console.error("Failed to load hour mask (non-blocking):", maskError)
+      }
+
+      // Include hourMask in the forecast request
+      const hourlyResult = await forecastHourly({
+        horizonDays: 7,
+        hourMask: hourMask || undefined,
+      })
 
       const businessName = businessProfile.name || "Business"
       const mapping = forecast?.results ? Object.values(forecast.results)[0]?.meta?.mapping || {} : {}
