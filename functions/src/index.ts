@@ -23,6 +23,7 @@ const db = admin.firestore();
 const ALLOWED_ORIGINS = new Set<string>([
   "https://v0-demand-forecasting-landing-page.vercel.app",
   "http://localhost:5173",
+  "https://v0-demand-forecasting-git-3f0a64-aarushvilvaray-8694s-projects.vercel.app",
   "http://localhost:3000",
 ]);
 
