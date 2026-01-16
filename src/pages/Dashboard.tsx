@@ -572,7 +572,24 @@ export default function Dashboard() {
               <X className="h-5 w-5" />
             </Button>
           </div>
-          <AskAiInput itemContext={currentItem} className="h-full" />
+
+          <div className="mb-4 space-y-2">
+            <label className="text-sm font-medium text-muted-foreground">Asking about:</label>
+            <Select value={forecastMode === "daily" ? currentItem : currentHourlyItem} onValueChange={setSelectedItem}>
+              <SelectTrigger className="w-full">
+                <SelectValue placeholder="Select product" />
+              </SelectTrigger>
+              <SelectContent>
+                {(forecastMode === "daily" ? items : hourlyItems).map((item) => (
+                  <SelectItem key={item} value={item}>
+                    {item}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <AskAiInput itemContext={forecastMode === "daily" ? currentItem : currentHourlyItem} className="h-full" />
         </div>
       )}
     </div>
