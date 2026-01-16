@@ -11,6 +11,8 @@ import { db } from "@/lib/firebase"
 import { doc, getDoc } from "firebase/firestore"
 import { loadOrComputeHourMask, type HourMask } from "@/lib/hour-mask"
 import { computeItemMetrics, type ItemMetrics } from "@/lib/compute-item-metrics"
+import { ItemListPanel } from "@/components/ItemListPanel"
+import { ItemDetailsPanel } from "@/components/ItemDetailsPanel"
 
 export default function Items() {
   const { forecast, selectedItem, setSelectedItem, setForecast } = useForecast()
@@ -83,6 +85,10 @@ export default function Items() {
     setItemMetrics(sorted)
   }, [forecast, hourlyForecast, forecastMode, businessProfile, hourMask, sortBy, maskEnabled])
 
+  const selectedMetrics = itemMetrics.find((m) => m.item === selectedItem)
+  const activeForecast = forecastMode === "hourly" ? hourlyForecast : forecast
+  const selectedForecastData = selectedItem && activeForecast?.results?.[selectedItem]?.forecast
+
   if (isLoading) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-background to-muted">
@@ -96,71 +102,102 @@ export default function Items() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background to-muted p-8">
-      <div className="mx-auto max-w-6xl space-y-6">
+      <div className="mx-auto max-w-7xl space-y-6">
         <div>
           <h1 className="text-3xl font-bold text-secondary">Items</h1>
           <p className="text-muted-foreground">Manage your product inventory and view detailed metrics</p>
         </div>
 
         {itemMetrics.length > 0 ? (
-          <Card>
-            <CardHeader>
-              <div className="flex items-center justify-between">
-                <div>
-                  <CardTitle>All Items</CardTitle>
-                  <CardDescription>Overview of all products with key metrics</CardDescription>
+          selectedItem && selectedMetrics && selectedForecastData ? (
+            <div className="flex gap-6 h-[calc(100vh-12rem)]">
+              <div className="w-80 flex-shrink-0">
+                <Card className="h-full">
+                  <CardContent className="p-4 h-full">
+                    <ItemListPanel
+                      itemMetrics={itemMetrics}
+                      selectedItem={selectedItem}
+                      onSelectItem={setSelectedItem}
+                      sortBy={sortBy}
+                      onSortChange={(v) => setSortBy(v)}
+                    />
+                  </CardContent>
+                </Card>
+              </div>
+
+              <div className="flex-1 animate-in slide-in-from-right-8 duration-300">
+                <Card className="h-full">
+                  <ItemDetailsPanel
+                    itemName={selectedItem}
+                    itemMetrics={selectedMetrics}
+                    forecastData={selectedForecastData}
+                    timezone={businessProfile?.timezone || "America/Los_Angeles"}
+                    mode={forecastMode}
+                    onClose={() => setSelectedItem(null)}
+                  />
+                </Card>
+              </div>
+            </div>
+          ) : (
+            <Card>
+              <CardHeader>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <CardTitle>All Items</CardTitle>
+                    <CardDescription>Overview of all products with key metrics</CardDescription>
+                  </div>
+                  <Select value={sortBy} onValueChange={(v) => setSortBy(v as any)}>
+                    <SelectTrigger className="w-48">
+                      <SelectValue placeholder="Sort by" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="sevenDayTotal">7-Day Total</SelectItem>
+                      <SelectItem value="nextOpenDayTotal">Next Open Day</SelectItem>
+                      <SelectItem value="peak">Peak Value</SelectItem>
+                      <SelectItem value="uncertainty">Uncertainty</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
-                <Select value={sortBy} onValueChange={(v) => setSortBy(v as any)}>
-                  <SelectTrigger className="w-48">
-                    <SelectValue placeholder="Sort by" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="sevenDayTotal">7-Day Total</SelectItem>
-                    <SelectItem value="nextOpenDayTotal">Next Open Day</SelectItem>
-                    <SelectItem value="peak">Peak Value</SelectItem>
-                    <SelectItem value="uncertainty">Uncertainty</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </CardHeader>
-            <CardContent>
-              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                {itemMetrics.map((metric) => (
-                  <Card
-                    key={metric.item}
-                    className={`cursor-pointer transition-all hover:shadow-md ${
-                      selectedItem === metric.item ? "border-primary shadow-md" : ""
-                    }`}
-                    onClick={() => setSelectedItem(metric.item)}
-                  >
-                    <CardHeader className="pb-3">
-                      <CardTitle className="text-lg">{metric.item}</CardTitle>
-                    </CardHeader>
-                    <CardContent className="space-y-2">
-                      <div className="flex justify-between text-sm">
-                        <span className="text-muted-foreground">Next Open Day:</span>
-                        <span className="font-semibold">{metric.nextOpenDayTotal}</span>
-                      </div>
-                      <div className="flex justify-between text-sm">
-                        <span className="text-muted-foreground">7-Day Total:</span>
-                        <span className="font-semibold">{metric.sevenDayTotal}</span>
-                      </div>
-                      <div className="flex justify-between text-sm">
-                        <span className="text-muted-foreground">Peak:</span>
-                        <span className="font-semibold">
-                          {metric.peak.label} ({metric.peak.value})
-                        </span>
-                      </div>
-                      <div className="flex justify-between text-sm">
-                        <span className="text-muted-foreground">Uncertainty:</span>
-                        <span className="font-semibold">±{metric.uncertainty}</span>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
+              </CardHeader>
+              <CardContent>
+                <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                  {itemMetrics.map((metric) => (
+                    <Card
+                      key={metric.item}
+                      className={`cursor-pointer transition-all hover:shadow-md ${
+                        selectedItem === metric.item ? "border-primary shadow-md" : ""
+                      }`}
+                      onClick={() => setSelectedItem(metric.item)}
+                    >
+                      <CardHeader className="pb-3">
+                        <CardTitle className="text-lg">{metric.item}</CardTitle>
+                      </CardHeader>
+                      <CardContent className="space-y-2">
+                        <div className="flex justify-between text-sm">
+                          <span className="text-muted-foreground">Next Open Day:</span>
+                          <span className="font-semibold">{metric.nextOpenDayTotal}</span>
+                        </div>
+                        <div className="flex justify-between text-sm">
+                          <span className="text-muted-foreground">7-Day Total:</span>
+                          <span className="font-semibold">{metric.sevenDayTotal}</span>
+                        </div>
+                        <div className="flex justify-between text-sm">
+                          <span className="text-muted-foreground">Peak:</span>
+                          <span className="font-semibold">
+                            {metric.peak.label} ({metric.peak.value})
+                          </span>
+                        </div>
+                        <div className="flex justify-between text-sm">
+                          <span className="text-muted-foreground">Uncertainty:</span>
+                          <span className="font-semibold">±{metric.uncertainty}</span>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          )
         ) : (
           <Card>
             <CardHeader>
