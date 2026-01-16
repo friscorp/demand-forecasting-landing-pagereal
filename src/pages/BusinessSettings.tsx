@@ -3,6 +3,7 @@ import { Settings } from "lucide-react"
 import { SalesDataUploadSection } from "@/components/SalesDataUploadSection"
 import { SuggestedHolidaysPanel } from "@/components/SuggestedHolidaysPanel"
 import { EventManagementSection } from "@/components/EventManagementSection" // Added event management
+import { BusinessConfigSection } from "@/components/BusinessConfigSection" // Added Business Profile subsection
 
 export default function BusinessSettings() {
   return (
@@ -25,8 +26,16 @@ export default function BusinessSettings() {
             </CardTitle>
             <CardDescription>Manage business hours, locations, and preferences</CardDescription>
           </CardHeader>
-          <CardContent className="space-y-6">
-            <EventManagementSection />
+          <CardContent className="space-y-8">
+            <div>
+              <h3 className="mb-4 text-lg font-semibold text-foreground">Business Profile</h3>
+              <BusinessConfigSection />
+            </div>
+
+            <div className="border-t pt-8">
+              <h3 className="mb-4 text-lg font-semibold text-foreground">Holidays & Closures</h3>
+              <EventManagementSection />
+            </div>
 
             <div className="flex flex-col items-center justify-center py-12 text-center">
               <Settings className="mb-4 h-12 w-12 text-muted-foreground/50" />

@@ -77,7 +77,7 @@ export default function Dashboard() {
           const profile = profileDoc.data()
           setBusinessProfile(profile)
 
-          const requiredFields = ["name", "category", "timezone"]
+          const requiredFields = ["name", "industry", "location", "timezone", "unitOfMeasure", "leadTime", "hours"]
           const isIncomplete = requiredFields.some((field) => !profile[field])
           if (isIncomplete) {
             setShowSetupBanner(true)
@@ -265,23 +265,27 @@ export default function Dashboard() {
 
       <div className="mx-auto max-w-6xl space-y-6">
         {showSetupBanner && !bannerDismissed && (
-          <Alert className="relative border-primary bg-primary/10">
-            <AlertCircle className="h-5 w-5 text-primary" />
-            <AlertDescription className="flex items-center justify-between gap-4 pr-8">
-              <span className="text-base font-medium">Finish setting up your business to generate forecasts</span>
-              <Button onClick={() => navigate("/onboarding")} size="sm" className="shrink-0">
-                Complete Business Setup
-              </Button>
-            </AlertDescription>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="absolute right-2 top-2 h-6 w-6"
-              onClick={() => setBannerDismissed(true)}
-            >
-              <X className="h-4 w-4" />
-            </Button>
-          </Alert>
+          <div className="mb-6 rounded-lg border-2 border-primary/20 bg-primary/5 p-4">
+            <div className="flex items-start gap-3">
+              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10">
+                <AlertCircle className="h-5 w-5 text-primary" />
+              </div>
+              <div className="flex-1">
+                <h3 className="font-semibold text-foreground">Finish setting up your business to generate forecasts</h3>
+                <p className="mt-1 text-sm text-muted-foreground">
+                  Complete your business profile to start forecasting demand
+                </p>
+              </div>
+              <div className="flex gap-2">
+                <Button onClick={() => navigate("/business-settings")} className="bg-primary hover:bg-primary/90">
+                  Complete Business Setup
+                </Button>
+                <Button variant="ghost" size="icon" onClick={() => setBannerDismissed(true)}>
+                  <X className="h-4 w-4" />
+                </Button>
+              </div>
+            </div>
+          </div>
         )}
 
         {activePromoCount > 0 && (hasForecastData || hasHourlyData) && (
