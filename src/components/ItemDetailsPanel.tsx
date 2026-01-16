@@ -128,14 +128,7 @@ export function ItemDetailsPanel({
                   <Area type="monotone" dataKey="lower" stroke="none" fill="hsl(var(--muted))" fillOpacity={0.3} />
                   <Area type="monotone" dataKey="upper" stroke="none" fill="hsl(var(--muted))" fillOpacity={0.3} />
                   <Line type="monotone" dataKey="forecast" stroke="hsl(var(--primary))" strokeWidth={2} dot={false} />
-                  <Line
-                    type="monotone"
-                    dataKey="average"
-                    stroke="#3EB489"
-                    strokeWidth={2}
-                    strokeDasharray="5 5"
-                    dot={false}
-                  />
+                  <Line type="monotone" dataKey="average" stroke="#3EB489" strokeWidth={2} dot={false} />
                 </AreaChart>
               </ResponsiveContainer>
             </ChartContainer>
