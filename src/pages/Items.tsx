@@ -16,6 +16,12 @@ import { ItemDetailsPanel } from "@/components/ItemDetailsPanel"
 import { SevenDayTotalsBarChart } from "@/components/SevenDayTotalsBarChart"
 import { Button } from "@/components/ui/button"
 import { X } from "lucide-react"
+import { getActivePromotions } from "@/lib/promotions"
+import { applyPromotionsToForecast, countActivePromotions } from "@/lib/applyPromotionsToForecast"
+import type { Promotion } from "@/lib/applyPromotionsToForecast"
+import { Alert, AlertDescription } from "@/components/ui/alert"
+import { Megaphone, ExternalLink } from "lucide-react"
+import { useNavigate } from "react-router-dom"
 
 export default function Items() {
   const { forecast, selectedItem, setSelectedItem, setForecast } = useForecast()
@@ -28,6 +34,10 @@ export default function Items() {
   const [forecastMode, setForecastMode] = useState<"daily" | "hourly">("daily")
   const [maskEnabled, setMaskEnabled] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
+  const [promotions, setPromotions] = useState<Promotion[]>([])
+  const [adjustedForecast, setAdjustedForecast] = useState<any>(null)
+  const [adjustedHourlyForecast, setAdjustedHourlyForecast] = useState<any>(null)
+  const navigate = useNavigate()
 
   useEffect(() => {
     const loadData = async () => {
@@ -70,7 +80,40 @@ export default function Items() {
   }, [user, authLoading, forecast, setForecast])
 
   useEffect(() => {
-    const activeForecast = forecastMode === "hourly" ? hourlyForecast : forecast
+    const loadPromotions = async () => {
+      if (!user) return
+
+      try {
+        const promos = await getActivePromotions(user.uid)
+        setPromotions(promos)
+      } catch (error) {
+        console.error("error loading promotions:", error)
+      }
+    }
+
+    if (user) {
+      loadPromotions()
+    }
+  }, [user])
+
+  useEffect(() => {
+    if (forecast && promotions.length > 0) {
+      const adjusted = applyPromotionsToForecast(forecast, promotions, businessProfile?.timezone)
+      setAdjustedForecast(adjusted)
+    } else {
+      setAdjustedForecast(forecast)
+    }
+
+    if (hourlyForecast && promotions.length > 0) {
+      const adjusted = applyPromotionsToForecast(hourlyForecast, promotions, businessProfile?.timezone)
+      setAdjustedHourlyForecast(adjusted)
+    } else {
+      setAdjustedHourlyForecast(hourlyForecast)
+    }
+  }, [forecast, hourlyForecast, promotions, businessProfile])
+
+  useEffect(() => {
+    const activeForecast = forecastMode === "hourly" ? adjustedHourlyForecast : adjustedForecast
     if (!activeForecast || !activeForecast.results) {
       setItemMetrics([])
       return
@@ -86,11 +129,13 @@ export default function Items() {
     })
 
     setItemMetrics(sorted)
-  }, [forecast, hourlyForecast, forecastMode, businessProfile, hourMask, sortBy, maskEnabled])
+  }, [adjustedForecast, adjustedHourlyForecast, forecastMode, businessProfile, hourMask, sortBy, maskEnabled])
 
   const selectedMetrics = itemMetrics.find((m) => m.item === selectedItem)
-  const activeForecast = forecastMode === "hourly" ? hourlyForecast : forecast
+  const activeForecast = forecastMode === "hourly" ? adjustedHourlyForecast : adjustedForecast
   const selectedForecastData = selectedItem && activeForecast?.results?.[selectedItem]?.forecast
+
+  const activePromoCount = countActivePromotions(forecast || {}, promotions)
 
   if (isLoading) {
     return (
@@ -110,6 +155,22 @@ export default function Items() {
           <h1 className="text-3xl font-bold text-secondary">Items</h1>
           <p className="text-muted-foreground">Manage your product inventory and view detailed metrics</p>
         </div>
+
+        {activePromoCount > 0 && itemMetrics.length > 0 && (
+          <Alert className="border-primary/30 bg-primary/10">
+            <Megaphone className="h-4 w-4 text-primary" />
+            <AlertDescription className="flex items-center justify-between">
+              <span>
+                Adjusted for <span className="font-semibold">{activePromoCount}</span> active promotion
+                {activePromoCount !== 1 ? "s" : ""}
+              </span>
+              <Button variant="ghost" size="sm" onClick={() => navigate("/promotions")} className="gap-2">
+                Manage Promotions
+                <ExternalLink className="h-3 w-3" />
+              </Button>
+            </AlertDescription>
+          </Alert>
+        )}
 
         {itemMetrics.length > 0 ? (
           selectedItem && selectedMetrics && selectedForecastData ? (

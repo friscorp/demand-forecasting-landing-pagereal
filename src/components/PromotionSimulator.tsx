@@ -9,17 +9,22 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Badge } from "@/components/ui/badge"
-import { Sparkles, TrendingUp, AlertCircle, Loader2 } from "lucide-react"
+import { Sparkles, TrendingUp, AlertCircle, Loader2, Check } from "lucide-react"
 import { fetchPromoMultiplier } from "@/api/ai"
 import type { PromoInput, AiPromoMultiplierResponse } from "@/api/ai"
+import { savePromotion } from "@/lib/promotions"
+import { useAuth } from "@/lib/auth-context"
+import { useToast } from "@/hooks/use-toast"
 
 interface PromotionSimulatorProps {
   selectedItem?: string
-  onApplyPromo: (multiplier: number) => Promise<void>
+  items?: string[]
 }
 
-export function PromotionSimulator({ selectedItem, onApplyPromo }: PromotionSimulatorProps) {
-  const [item, setItem] = useState(selectedItem || "")
+export function PromotionSimulator({ selectedItem, items = [] }: PromotionSimulatorProps) {
+  const { user } = useAuth()
+  const { toast } = useToast()
+  const [item, setItem] = useState(selectedItem || "All items")
   const [startDate, setStartDate] = useState("")
   const [startTime, setStartTime] = useState("08:00")
   const [endDate, setEndDate] = useState("")
@@ -30,6 +35,7 @@ export function PromotionSimulator({ selectedItem, onApplyPromo }: PromotionSimu
   const [result, setResult] = useState<AiPromoMultiplierResponse | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [isApplying, setIsApplying] = useState(false)
+  const [applied, setApplied] = useState(false)
 
   const handleEstimate = async () => {
     if (!item || !startDate || !endDate) {
@@ -40,6 +46,7 @@ export function PromotionSimulator({ selectedItem, onApplyPromo }: PromotionSimu
     setIsLoading(true)
     setError(null)
     setResult(null)
+    setApplied(false)
 
     try {
       const promoInput: PromoInput = {
@@ -60,13 +67,41 @@ export function PromotionSimulator({ selectedItem, onApplyPromo }: PromotionSimu
   }
 
   const handleApply = async () => {
-    if (!result?.multiplier) return
+    if (!result?.multiplier || !user) return
 
     setIsApplying(true)
+    setError(null)
+
     try {
-      await onApplyPromo(result.multiplier)
+      await savePromotion(user.uid, {
+        item: item || null,
+        start: `${startDate}T${startTime}:00`,
+        end: `${endDate}T${endTime}:00`,
+        offer: offer || null,
+        channel,
+        multiplier: result.multiplier,
+        confidence: result.confidence,
+        rating_0to10: result.rating_0to10 || 0,
+        metrics: {
+          expectedLiftPct: result.promo?.estimatedLiftPct || 0,
+          baselineUnitsEstimate: result.promo?.baselineUnitsEstimate,
+          promoUnitsEstimate: result.promo?.promoUnitsEstimate,
+        },
+        warnings: result.risks || [],
+      })
+
+      setApplied(true)
+      toast({
+        title: "Promotion Applied",
+        description: "Forecast views will reflect this change.",
+      })
     } catch (err: any) {
       setError(err.message || "Failed to apply promotion")
+      toast({
+        title: "Error",
+        description: err.message || "Failed to apply promotion",
+        variant: "destructive",
+      })
     } finally {
       setIsApplying(false)
     }
@@ -79,13 +114,34 @@ export function PromotionSimulator({ selectedItem, onApplyPromo }: PromotionSimu
           <Sparkles className="h-5 w-5" />
           Promotion Simulator
         </CardTitle>
-        <CardDescription>Estimate the impact of promotions on hourly demand</CardDescription>
+        <CardDescription>Estimate the impact of promotions on demand forecasts</CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
         <div className="grid gap-4 md:grid-cols-2">
           <div className="space-y-2">
             <Label htmlFor="promo-item">Item *</Label>
-            <Input id="promo-item" value={item} onChange={(e) => setItem(e.target.value)} placeholder="Product name" />
+            {items.length > 0 ? (
+              <Select value={item} onValueChange={setItem}>
+                <SelectTrigger id="promo-item">
+                  <SelectValue placeholder="Select item or All items" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="All items">All items</SelectItem>
+                  {items.map((i) => (
+                    <SelectItem key={i} value={i}>
+                      {i}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            ) : (
+              <Input
+                id="promo-item"
+                value={item}
+                onChange={(e) => setItem(e.target.value)}
+                placeholder="Product name or leave empty for all"
+              />
+            )}
           </div>
 
           <div className="space-y-2">
@@ -162,11 +218,16 @@ export function PromotionSimulator({ selectedItem, onApplyPromo }: PromotionSimu
                 <h4 className="font-semibold text-primary">Estimated Impact</h4>
                 <p className="text-sm text-muted-foreground mt-1">{result.short}</p>
               </div>
-              {result.confidence < 0.4 && (
+              {applied ? (
+                <Badge className="shrink-0 bg-green-500">
+                  <Check className="mr-1 h-3 w-3" />
+                  Applied
+                </Badge>
+              ) : result.confidence < 0.4 ? (
                 <Badge variant="destructive" className="shrink-0">
                   Low Confidence
                 </Badge>
-              )}
+              ) : null}
             </div>
 
             <div className="grid gap-3 sm:grid-cols-2">
@@ -210,14 +271,14 @@ export function PromotionSimulator({ selectedItem, onApplyPromo }: PromotionSimu
                   <p className="font-semibold mb-1">Warnings:</p>
                   <ul className="list-disc list-inside space-y-1 text-sm">
                     {result.risks.map((risk, i) => (
-                      <li key={i}>{risk}</li>
+                      <li key={i}>{typeof risk === "string" ? risk : risk.title || risk.detail || "Warning"}</li>
                     ))}
                   </ul>
                 </AlertDescription>
               </Alert>
             )}
 
-            {result.multiplier && (
+            {result.multiplier && !applied && (
               <Button onClick={handleApply} disabled={isApplying} className="w-full bg-primary hover:bg-primary/90">
                 {isApplying ? (
                   <>
@@ -225,7 +286,7 @@ export function PromotionSimulator({ selectedItem, onApplyPromo }: PromotionSimu
                     Applying...
                   </>
                 ) : (
-                  "Apply to Forecast"
+                  "Apply Promotion to Forecast"
                 )}
               </Button>
             )}

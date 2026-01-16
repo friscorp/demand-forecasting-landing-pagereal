@@ -34,6 +34,9 @@ import { BackgroundForecastChart } from "@/components/BackgroundForecastChart"
 import { HistoryCompare } from "@/components/HistoryCompare"
 import { AiInsightsSection } from "@/components/AiInsightsSection"
 import { AskAiInput } from "@/components/AskAiInput"
+import { getActivePromotions } from "@/lib/promotions"
+import { applyPromotionsToForecast, countActivePromotions } from "@/lib/applyPromotionsToForecast"
+import type { Promotion } from "@/lib/applyPromotionsToForecast"
 
 export default function Dashboard() {
   const { forecast, selectedItem, setSelectedItem, setForecast } = useForecast()
@@ -54,6 +57,9 @@ export default function Dashboard() {
   const [hourlyGenerateError, setHourlyGenerateError] = useState<string | null>(null)
   const [hourMask, setHourMask] = useState<HourMask | null>(null)
   const [maskEnabled, setMaskEnabled] = useState(false)
+  const [promotions, setPromotions] = useState<Promotion[]>([])
+  const [adjustedForecast, setAdjustedForecast] = useState<any>(null)
+  const [adjustedHourlyForecast, setAdjustedHourlyForecast] = useState<any>(null)
 
   useEffect(() => {
     const loadData = async () => {
@@ -141,6 +147,41 @@ export default function Dashboard() {
     loadHourlyData()
   }, [forecastMode, user, authLoading, hourlyForecast, businessProfile])
 
+  useEffect(() => {
+    const loadPromotions = async () => {
+      if (!user) return
+
+      try {
+        const promos = await getActivePromotions(user.uid)
+        setPromotions(promos)
+      } catch (error) {
+        console.error("error loading promotions:", error)
+      }
+    }
+
+    if (user) {
+      loadPromotions()
+    }
+  }, [user])
+
+  useEffect(() => {
+    if (forecast && promotions.length > 0) {
+      const adjusted = applyPromotionsToForecast(forecast, promotions, businessProfile?.timezone)
+      setAdjustedForecast(adjusted)
+    } else {
+      setAdjustedForecast(forecast)
+    }
+  }, [forecast, promotions, businessProfile])
+
+  useEffect(() => {
+    if (hourlyForecast && promotions.length > 0) {
+      const adjusted = applyPromotionsToForecast(hourlyForecast, promotions, businessProfile?.timezone)
+      setAdjustedHourlyForecast(adjusted)
+    } else {
+      setAdjustedHourlyForecast(hourlyForecast)
+    }
+  }, [hourlyForecast, promotions, businessProfile])
+
   const handleGenerateHourlyForecast = async () => {
     if (!user || !businessProfile) {
       setHourlyGenerateError("Please complete business setup first")
@@ -158,7 +199,6 @@ export default function Dashboard() {
         console.error("Failed to load hour mask (non-blocking):", maskError)
       }
 
-      // Include hourMask in the forecast request
       const hourlyResult = await forecastHourly({
         horizonDays: 7,
         hourMask: hourMask || undefined,
@@ -204,16 +244,18 @@ export default function Dashboard() {
     )
   }
 
-  const resultsObj = forecast?.results ?? {}
+  const resultsObj = adjustedForecast?.results ?? {}
   const items = Object.keys(resultsObj)
   const hasForecastData = items.length > 0
   const currentItem = selectedItem || items[0]
   const forecastData = hasForecastData ? resultsObj[currentItem]?.forecast || [] : []
 
-  const hourlyResultsObj = hourlyForecast?.results ?? {}
+  const hourlyResultsObj = adjustedHourlyForecast?.results ?? {}
   const hasHourlyData = hourlyItems.length > 0
   const currentHourlyItem = selectedItem || hourlyItems[0]
   const hourlyForecastData = hasHourlyData ? hourlyResultsObj[currentHourlyItem]?.forecast || [] : []
+
+  const activePromoCount = countActivePromotions(forecast || {}, promotions)
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background to-muted p-8">
@@ -242,6 +284,22 @@ export default function Dashboard() {
           </Alert>
         )}
 
+        {activePromoCount > 0 && (hasForecastData || hasHourlyData) && (
+          <Alert className="border-primary/30 bg-primary/10">
+            <Megaphone className="h-4 w-4 text-primary" />
+            <AlertDescription className="flex items-center justify-between">
+              <span>
+                Adjusted for <span className="font-semibold">{activePromoCount}</span> active promotion
+                {activePromoCount !== 1 ? "s" : ""}
+              </span>
+              <Button variant="ghost" size="sm" onClick={() => navigate("/promotions")} className="gap-2">
+                Manage Promotions
+                <ExternalLink className="h-3 w-3" />
+              </Button>
+            </AlertDescription>
+          </Alert>
+        )}
+
         <div className="flex items-center gap-4">
           <Button variant="ghost" size="icon" onClick={() => navigate("/")}>
             <ArrowLeft className="h-5 w-5" />
@@ -255,7 +313,6 @@ export default function Dashboard() {
             size="sm"
             onClick={() => {
               navigate("/business-settings")
-              // Scroll to sales data section after navigation
               setTimeout(() => {
                 document.getElementById("sales-data")?.scrollIntoView({ behavior: "smooth" })
               }, 100)
