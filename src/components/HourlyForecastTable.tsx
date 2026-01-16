@@ -39,7 +39,7 @@ export function HourlyForecastTable({
   maskEnabled = true,
   onMaskEnabledChange,
 }: HourlyForecastTableProps) {
-  const [useMaskFilter, setUseMaskFilter] = useState(maskEnabled)
+  const [useMaskFilter, setUseMaskFilter] = useState(true)
   const [currentDayIndex, setCurrentDayIndex] = useState(0)
 
   const timezone = businessProfile?.timezone || "America/Los_Angeles"
