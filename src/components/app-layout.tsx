@@ -21,6 +21,7 @@ export function AppLayout({ children }: AppLayoutProps) {
     location.pathname.startsWith("/items") ||
     location.pathname.startsWith("/promotions") ||
     location.pathname.startsWith("/business-settings") ||
+    location.pathname.startsWith("/business-info") || // Added business-info to show sidebar
     location.pathname.startsWith("/preferences")
 
   if (!user || !isDashboardPage) {

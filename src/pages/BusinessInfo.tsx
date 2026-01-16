@@ -71,7 +71,7 @@ export default function BusinessInfo() {
 
   if (loading) {
     return (
-      <div className="container mx-auto p-6">
+      <div className="container mx-auto p-6 max-w-7xl">
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-secondary">Business Info</h1>
           <p className="text-muted-foreground">Loading business information...</p>
@@ -82,7 +82,7 @@ export default function BusinessInfo() {
 
   if (!user) {
     return (
-      <div className="container mx-auto p-6">
+      <div className="container mx-auto p-6 max-w-7xl">
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-secondary">Business Info</h1>
           <p className="text-muted-foreground">Please sign in to view business information</p>
@@ -92,7 +92,7 @@ export default function BusinessInfo() {
   }
 
   return (
-    <div className="container mx-auto p-6">
+    <div className="container mx-auto p-6 max-w-7xl">
       <div className="mb-8">
         <h1 className="text-3xl font-bold text-secondary">Business Info</h1>
         <p className="text-muted-foreground">View your business details and important dates</p>
