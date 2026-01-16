@@ -31,6 +31,8 @@ import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { loadOrComputeHourMask, type HourMask } from "@/lib/hour-mask"
 import { BackgroundForecastChart } from "@/components/BackgroundForecastChart"
 import { HistoryCompare } from "@/components/HistoryCompare"
+import { AiInsightsSection } from "@/components/AiInsightsSection"
+import { AskAiInput } from "@/components/AskAiInput"
 
 export default function Dashboard() {
   const { forecast, selectedItem, setSelectedItem, setForecast } = useForecast()
@@ -305,6 +307,8 @@ export default function Dashboard() {
           </Card>
         </div>
 
+        {(hasForecastData || hasHourlyData) && <AskAiInput />}
+
         <Card>
           <CardHeader>
             <div className="flex items-center justify-between">
@@ -443,6 +447,8 @@ export default function Dashboard() {
             )}
           </CardContent>
         </Card>
+
+        {(hasForecastData || hasHourlyData) && <AiInsightsSection hasForecastData={hasForecastData || hasHourlyData} />}
 
         {forecastMode === "hourly" && hasHourlyData && (
           <HistoryCompare items={hourlyItems} selectedItem={currentHourlyItem} />

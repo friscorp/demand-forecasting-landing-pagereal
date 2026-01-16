@@ -8,6 +8,7 @@ import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/
 import { Line, XAxis, YAxis, CartesianGrid, ResponsiveContainer, Area, AreaChart } from "recharts"
 import { parseISOToZonedParts } from "@/lib/time-filtering"
 import type { ForecastPoint } from "@/lib/api"
+import { AskAiInput } from "./AskAiInput"
 
 type ItemDetailsPanelProps = {
   itemName: string
@@ -188,6 +189,8 @@ export function ItemDetailsPanel({
             </CardContent>
           </Card>
         </div>
+
+        <AskAiInput itemContext={itemName} />
 
         <Card>
           <CardHeader>
