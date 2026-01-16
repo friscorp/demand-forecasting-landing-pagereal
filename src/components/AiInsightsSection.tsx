@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -19,6 +19,9 @@ import { fetchWeeklyInsights } from "@/api/ai"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Progress } from "@/components/ui/progress"
 import { Skeleton } from "@/components/ui/skeleton"
+import { collection, query, where, orderBy, limit, getDocs } from "firebase/firestore"
+import { db } from "@/lib/firebase"
+import { useAuth } from "@/lib/auth-context"
 
 type AiInsightsSectionProps = {
   hasForecastData: boolean
@@ -37,6 +40,7 @@ export function AiInsightsSection({ hasForecastData, className = "" }: AiInsight
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [isDetailedExpanded, setIsDetailedExpanded] = useState(false)
+  const { user } = useAuth()
 
   const handleGenerate = async () => {
     setIsLoading(true)
@@ -51,6 +55,32 @@ export function AiInsightsSection({ hasForecastData, className = "" }: AiInsight
       setIsLoading(false)
     }
   }
+
+  useEffect(() => {
+    async function loadRecentInsights() {
+      if (!user) return
+
+      try {
+        const aiOutputsRef = collection(db, "users", user.uid, "ai_outputs")
+        const q = query(aiOutputsRef, where("task", "==", "weekly_insights"), orderBy("createdAt", "desc"), limit(1))
+        const snapshot = await getDocs(q)
+
+        if (!snapshot.empty) {
+          const doc = snapshot.docs[0]
+          const data = doc.data()
+          if (data.response) {
+            setInsights(data.response)
+          }
+        }
+      } catch (err) {
+        console.error("Error loading recent insights:", err)
+      }
+    }
+
+    if (hasForecastData) {
+      loadRecentInsights()
+    }
+  }, [user, hasForecastData])
 
   if (!hasForecastData) {
     return (

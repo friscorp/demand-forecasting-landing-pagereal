@@ -8,7 +8,7 @@ import { Checkbox } from "@/components/ui/checkbox"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Badge } from "@/components/ui/badge"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { Calendar, Loader2, AlertCircle, CheckCircle, Sparkles, ExternalLink } from "lucide-react"
+import { Loader2, AlertCircle, CheckCircle, Sparkles, ExternalLink } from "lucide-react"
 import { auth, db } from "@/lib/firebase"
 import { doc, getDoc, updateDoc, arrayUnion } from "firebase/firestore"
 
@@ -148,125 +148,133 @@ export function SuggestedHolidaysPanel() {
   }
 
   return (
-    <Card id="holidays-section">
-      <CardHeader className="flex flex-row items-center justify-between">
-        <div>
-          <CardTitle className="flex items-center gap-2">
-            <Calendar className="h-5 w-5" />
-            Suggested Holidays
-          </CardTitle>
-          <CardDescription>AI-generated holiday suggestions based on your region</CardDescription>
-        </div>
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => navigate("/business-info")}
-          className="text-xs text-muted-foreground hover:text-foreground"
-        >
-          <ExternalLink className="h-4 w-4" />
-        </Button>
-      </CardHeader>
-      <CardContent className="space-y-4">
-        {!region && (
-          <Alert>
-            <AlertCircle className="h-4 w-4" />
-            <AlertDescription>Set your business region to generate holiday suggestions.</AlertDescription>
-          </Alert>
-        )}
+    <Card id="holidays-section" className="relative overflow-hidden">
+      <div className="absolute inset-0 bg-gradient-to-br from-primary/20 via-blue-500/10 to-purple-500/10 rounded-lg" />
+      <div className="absolute inset-[1px] bg-background rounded-lg" />
 
-        {error && (
-          <Alert variant="destructive">
-            <AlertCircle className="h-4 w-4" />
-            <AlertDescription>{error}</AlertDescription>
-          </Alert>
-        )}
-
-        {success && (
-          <Alert className="border-primary bg-primary/10">
-            <CheckCircle className="h-4 w-4 text-primary" />
-            <AlertDescription>Selected holidays added successfully!</AlertDescription>
-          </Alert>
-        )}
-
-        {holidays.length === 0 && (
-          <Button onClick={handleGenerate} disabled={isLoading || !region} className="w-full">
-            {isLoading ? (
-              <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Generating...
-              </>
-            ) : (
-              <>
-                <Sparkles className="mr-2 h-4 w-4" />
-                Generate Holiday Suggestions
-              </>
-            )}
+      <div className="relative">
+        <CardHeader className="flex flex-row items-center justify-between">
+          <div>
+            <CardTitle className="flex items-center gap-2">
+              <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-gradient-to-br from-primary to-blue-500">
+                <Sparkles className="h-5 w-5 text-white" />
+              </div>
+              Suggested Holidays
+            </CardTitle>
+            <CardDescription>AI-generated holiday suggestions based on your region</CardDescription>
+          </div>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => navigate("/business-info")}
+            className="text-xs text-muted-foreground hover:text-foreground gap-1"
+          >
+            View all holidays
+            <ExternalLink className="h-3 w-3" />
           </Button>
-        )}
+        </CardHeader>
+        <CardContent className="space-y-4">
+          {!region && (
+            <Alert>
+              <AlertCircle className="h-4 w-4" />
+              <AlertDescription>Set your business region to generate holiday suggestions.</AlertDescription>
+            </Alert>
+          )}
 
-        {holidays.length > 0 && (
-          <>
-            <div className="rounded-lg border">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead className="w-12"></TableHead>
-                    <TableHead>Holiday</TableHead>
-                    <TableHead>Date</TableHead>
-                    <TableHead>Category</TableHead>
-                    <TableHead>Relevance</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {holidays.map((holiday) => {
-                    const displayDate = holiday.observedDate || holiday.date
-                    return (
-                      <TableRow key={holiday.date}>
-                        <TableCell>
-                          <Checkbox
-                            checked={selectedHolidays.has(holiday.date)}
-                            onCheckedChange={() => toggleHoliday(holiday.date)}
-                          />
-                        </TableCell>
-                        <TableCell className="font-medium">{holiday.name}</TableCell>
-                        <TableCell>
-                          {new Date(displayDate).toLocaleDateString("en-US", {
-                            month: "short",
-                            day: "numeric",
-                            year: "numeric",
-                          })}
-                        </TableCell>
-                        <TableCell>
-                          <Badge variant="outline" className="capitalize">
-                            {holiday.category}
-                          </Badge>
-                        </TableCell>
-                        <TableCell className="text-sm text-muted-foreground">{holiday.relevanceNote}</TableCell>
-                      </TableRow>
-                    )
-                  })}
-                </TableBody>
-              </Table>
-            </div>
+          {error && (
+            <Alert variant="destructive">
+              <AlertCircle className="h-4 w-4" />
+              <AlertDescription>{error}</AlertDescription>
+            </Alert>
+          )}
 
-            <div className="flex gap-2">
-              <Button onClick={handleApply} disabled={isSaving || selectedHolidays.size === 0} className="flex-1">
-                {isSaving ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Saving...
-                  </>
-                ) : (
-                  `Add ${selectedHolidays.size} Selected Holiday${selectedHolidays.size !== 1 ? "s" : ""}`
-                )}
-              </Button>
-              <Button variant="outline" onClick={() => setHolidays([])}>
-                Cancel
-              </Button>
-            </div>
-          </>
-        )}
-      </CardContent>
+          {success && (
+            <Alert className="border-primary bg-primary/10">
+              <CheckCircle className="h-4 w-4 text-primary" />
+              <AlertDescription>Selected holidays added successfully!</AlertDescription>
+            </Alert>
+          )}
+
+          {holidays.length === 0 && (
+            <Button onClick={handleGenerate} disabled={isLoading || !region} className="w-full">
+              {isLoading ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Generating...
+                </>
+              ) : (
+                <>
+                  <Sparkles className="mr-2 h-4 w-4" />
+                  Generate Holiday Suggestions
+                </>
+              )}
+            </Button>
+          )}
+
+          {holidays.length > 0 && (
+            <>
+              <div className="rounded-lg border">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead className="w-12"></TableHead>
+                      <TableHead>Holiday</TableHead>
+                      <TableHead>Date</TableHead>
+                      <TableHead>Category</TableHead>
+                      <TableHead>Relevance</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {holidays.map((holiday) => {
+                      const displayDate = holiday.observedDate || holiday.date
+                      return (
+                        <TableRow key={holiday.date}>
+                          <TableCell>
+                            <Checkbox
+                              checked={selectedHolidays.has(holiday.date)}
+                              onCheckedChange={() => toggleHoliday(holiday.date)}
+                            />
+                          </TableCell>
+                          <TableCell className="font-medium">{holiday.name}</TableCell>
+                          <TableCell>
+                            {new Date(displayDate).toLocaleDateString("en-US", {
+                              month: "short",
+                              day: "numeric",
+                              year: "numeric",
+                            })}
+                          </TableCell>
+                          <TableCell>
+                            <Badge variant="outline" className="capitalize">
+                              {holiday.category}
+                            </Badge>
+                          </TableCell>
+                          <TableCell className="text-sm text-muted-foreground">{holiday.relevanceNote}</TableCell>
+                        </TableRow>
+                      )
+                    })}
+                  </TableBody>
+                </Table>
+              </div>
+
+              <div className="flex gap-2">
+                <Button onClick={handleApply} disabled={isSaving || selectedHolidays.size === 0} className="flex-1">
+                  {isSaving ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Saving...
+                    </>
+                  ) : (
+                    `Add ${selectedHolidays.size} Selected Holiday${selectedHolidays.size !== 1 ? "s" : ""}`
+                  )}
+                </Button>
+                <Button variant="outline" onClick={() => setHolidays([])}>
+                  Cancel
+                </Button>
+              </div>
+            </>
+          )}
+        </CardContent>
+      </div>
     </Card>
   )
 }

@@ -14,9 +14,10 @@ export default function BusinessSettings() {
           <p className="text-muted-foreground">Configure your business preferences</p>
         </div>
 
-        <SalesDataUploadSection />
-
-        <SuggestedHolidaysPanel />
+        <div className="grid gap-6 md:grid-cols-2">
+          <SalesDataUploadSection />
+          <SuggestedHolidaysPanel />
+        </div>
 
         <Card>
           <CardHeader>

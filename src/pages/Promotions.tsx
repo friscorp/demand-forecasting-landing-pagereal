@@ -13,6 +13,7 @@ import type { Promotion } from "@/lib/applyPromotionsToForecast"
 import { Badge } from "@/components/ui/badge"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Switch } from "@/components/ui/switch"
+import { ManualPromotionForm } from "@/components/ManualPromotionForm"
 
 export default function Promotions() {
   const { user, loading: authLoading } = useAuth()
@@ -93,6 +94,14 @@ export default function Promotions() {
     }
   }
 
+  const handlePromotionCreated = async () => {
+    // Reload promotions list
+    if (user) {
+      const promos = await getAllPromotions(user.uid)
+      setPromotions(promos)
+    }
+  }
+
   if (authLoading || isLoading) {
     return (
       <div className="flex min-h-screen items-center justify-center">
@@ -129,6 +138,8 @@ export default function Promotions() {
             </AlertDescription>
           </Alert>
         )}
+
+        {hasData && <ManualPromotionForm items={items} onSuccess={handlePromotionCreated} />}
 
         {hasData && <PromotionSimulator items={items} />}
 
