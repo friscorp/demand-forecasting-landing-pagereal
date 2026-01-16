@@ -188,13 +188,13 @@ export function HistoryCompare({ items, selectedItem }: HistoryCompareProps) {
               <h4 className="font-semibold">
                 {compareResult.item} - {compareResult.monthDay}
               </h4>
-              {compareResult.years && Object.keys(compareResult.years).length > 0 ? (
+              {compareResult.byYear && Object.keys(compareResult.byYear).length > 0 ? (
                 <div className="border rounded-lg overflow-hidden">
                   <Table>
                     <TableHeader>
                       <TableRow>
                         <TableHead>Hour</TableHead>
-                        {Object.keys(compareResult.years)
+                        {Object.keys(compareResult.byYear)
                           .sort()
                           .map((year) => (
                             <TableHead key={year} className="text-right">
@@ -209,14 +209,14 @@ export function HistoryCompare({ items, selectedItem }: HistoryCompareProps) {
                         return (
                           <TableRow key={hour}>
                             <TableCell className="font-medium">{hourStr}</TableCell>
-                            {Object.keys(compareResult.years)
+                            {Object.keys(compareResult.byYear)
                               .sort()
                               .map((year) => {
-                                const yearData = compareResult.years[year]
+                                const yearData = compareResult.byYear[year]
                                 const dataPoint = yearData.find((d) => d.hour === hour)
                                 return (
                                   <TableCell key={year} className="text-right">
-                                    {dataPoint ? Math.round(dataPoint.actual) : "-"}
+                                    {dataPoint ? Math.round(dataPoint.y) : "-"}
                                   </TableCell>
                                 )
                               })}

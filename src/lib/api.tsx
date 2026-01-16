@@ -106,6 +106,23 @@ export interface HourlyRunResponse {
   createdAt: string
 }
 
+export interface CompareDayRequest {
+  item: string
+  monthDay: string // Format: MM-DD
+}
+
+export interface CompareDayResponse {
+  item: string
+  monthDay: string
+  byYear: {
+    [year: string]: Array<{
+      ds: string
+      y: number
+      hour: number
+    }>
+  }
+}
+
 // ----- Helper Function -----
 
 async function authedJsonFetch(path: string, options?: RequestInit): Promise<any> {
@@ -326,22 +343,6 @@ export async function ingestHistoryHourly(): Promise<{ count: number; message: s
     return result
   } catch (error: any) {
     throw new Error(error.message || "Failed to ingest history")
-  }
-}
-
-export interface CompareDayRequest {
-  item: string
-  monthDay: string // Format: MM-DD
-}
-
-export interface CompareDayResponse {
-  item: string
-  monthDay: string
-  years: {
-    [year: string]: Array<{
-      hour: number
-      actual: number
-    }>
   }
 }
 
