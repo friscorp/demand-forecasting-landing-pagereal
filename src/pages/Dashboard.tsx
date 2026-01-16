@@ -27,6 +27,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert"
 import { HourlyForecastTable } from "@/components/HourlyForecastTable"
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { loadOrComputeHourMask, type HourMask } from "@/lib/hour-mask"
+import { BackgroundForecastChart } from "@/components/BackgroundForecastChart"
 
 export default function Dashboard() {
   const { forecast, selectedItem, setSelectedItem, setForecast } = useForecast()
@@ -356,44 +357,52 @@ export default function Dashboard() {
 
             {forecastMode === "daily" ? (
               hasForecastData && forecastData.length > 0 ? (
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Date</TableHead>
-                      <TableHead className="text-right">Predicted Demand</TableHead>
-                      <TableHead className="text-right">Lower Bound</TableHead>
-                      <TableHead className="text-right">Upper Bound</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {forecastData.map((point, index) => (
-                      <TableRow key={index}>
-                        <TableCell className="font-medium">
-                          {new Date(point.ds).toLocaleDateString("en-US", {
-                            weekday: "short",
-                            month: "short",
-                            day: "numeric",
-                          })}
-                        </TableCell>
-                        <TableCell className="text-right font-semibold">{Math.round(point.yhat)}</TableCell>
-                        <TableCell className="text-right text-muted-foreground">
-                          {point.yhat_lower.toFixed(1)}
-                        </TableCell>
-                        <TableCell className="text-right text-muted-foreground">
-                          {point.yhat_upper.toFixed(1)}
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
+                <div className="relative min-h-[400px]">
+                  <BackgroundForecastChart data={forecastData} />
+                  <div className="relative z-10">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Date</TableHead>
+                          <TableHead className="text-right">Predicted Demand</TableHead>
+                          <TableHead className="text-right">Lower Bound</TableHead>
+                          <TableHead className="text-right">Upper Bound</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {forecastData.map((point, index) => (
+                          <TableRow key={index}>
+                            <TableCell className="font-medium">
+                              {new Date(point.ds).toLocaleDateString("en-US", {
+                                weekday: "short",
+                                month: "short",
+                                day: "numeric",
+                              })}
+                            </TableCell>
+                            <TableCell className="text-right font-semibold">{Math.round(point.yhat)}</TableCell>
+                            <TableCell className="text-right text-muted-foreground">
+                              {point.yhat_lower.toFixed(1)}
+                            </TableCell>
+                            <TableCell className="text-right text-muted-foreground">
+                              {point.yhat_upper.toFixed(1)}
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </div>
+                </div>
               ) : (
-                <div className="flex flex-col items-center justify-center py-12 text-center">
-                  <TrendingUp className="mb-4 h-12 w-12 text-muted-foreground/50" />
-                  <h3 className="mb-2 text-lg font-semibold text-muted-foreground">No forecast data yet</h3>
-                  <p className="mb-4 text-sm text-muted-foreground">
-                    Complete the onboarding process to generate your first forecast
-                  </p>
-                  <Button onClick={() => navigate("/onboarding")}>Create one</Button>
+                <div className="relative min-h-[400px]">
+                  <BackgroundForecastChart data={[]} />
+                  <div className="relative z-10 flex flex-col items-center justify-center py-12 text-center">
+                    <TrendingUp className="mb-4 h-12 w-12 text-muted-foreground/50" />
+                    <h3 className="mb-2 text-lg font-semibold text-muted-foreground">No forecast data yet</h3>
+                    <p className="mb-4 text-sm text-muted-foreground">
+                      Complete the onboarding process to generate your first forecast
+                    </p>
+                    <Button onClick={() => navigate("/onboarding")}>Create one</Button>
+                  </div>
                 </div>
               )
             ) : isLoadingHourly ? (
