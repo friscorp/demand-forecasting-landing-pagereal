@@ -23,7 +23,7 @@ const steps = [
   { title: "Hours & Closed Days", component: StepHours },
   { title: "Lead Time", component: StepLeadTime },
   { title: "Upload CSV", component: StepUploadCSV },
-  { title: "Events Calendar", component: StepEvents },
+  { title: "Holidays", component: StepEvents },
   { title: "Recipe Mapping", component: StepRecipeMapping },
   { title: "Generate Forecast", component: StepGenerateForecast },
 ]

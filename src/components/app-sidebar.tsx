@@ -1,4 +1,4 @@
-import { LayoutDashboard, Package, Megaphone, Settings } from "lucide-react"
+import { LayoutDashboard, Package, Megaphone, Settings, Building2 } from "lucide-react"
 import { Link, useLocation } from "react-router-dom"
 import {
   Sidebar,
@@ -26,6 +26,11 @@ const navItems = [
     title: "Promotions",
     url: "/promotions",
     icon: Megaphone,
+  },
+  {
+    title: "Business Info",
+    url: "/business-info",
+    icon: Building2,
   },
   {
     title: "Business Settings",

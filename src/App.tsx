@@ -15,6 +15,7 @@ import Items from "./pages/Items"
 import Promotions from "./pages/Promotions"
 import BusinessSettings from "./pages/BusinessSettings"
 import Preferences from "./pages/Preferences"
+import BusinessInfo from "./pages/BusinessInfo"
 
 const queryClient = new QueryClient()
 
@@ -34,6 +35,7 @@ const App = () => (
                   <Route path="/dashboard" element={<Dashboard />} />
                   <Route path="/items" element={<Items />} />
                   <Route path="/promotions" element={<Promotions />} />
+                  <Route path="/business-info" element={<BusinessInfo />} />
                   <Route path="/business-settings" element={<BusinessSettings />} />
                   <Route path="/preferences" element={<Preferences />} />
                   <Route path="*" element={<NotFound />} />

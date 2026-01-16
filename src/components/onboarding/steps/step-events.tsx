@@ -7,7 +7,6 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Calendar } from "@/components/ui/calendar"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { CalendarIcon, Plus, Trash2 } from "lucide-react"
 import { format } from "date-fns"
 
@@ -15,7 +14,7 @@ export function StepEvents() {
   const { data, updateData } = useOnboarding()
   const [newEvent, setNewEvent] = useState({
     date: undefined as Date | undefined,
-    type: "holiday" as "holiday" | "promotion" | "closure",
+    type: "holiday" as const,
     description: "",
   })
 
@@ -57,9 +56,7 @@ export function StepEvents() {
 
   return (
     <div className="space-y-8">
-      <p className="text-muted-foreground">
-        Add important dates that might affect demand (holidays, promotions, closures)
-      </p>
+      <p className="text-muted-foreground">Add important dates that might affect demand (holidays)</p>
 
       <div className="space-y-4 rounded-xl border bg-card p-6">
         <div className="grid gap-4 sm:grid-cols-2">
@@ -81,28 +78,14 @@ export function StepEvents() {
               </PopoverContent>
             </Popover>
           </div>
-
-          <div className="space-y-2">
-            <Label>Event Type</Label>
-            <Select value={newEvent.type} onValueChange={(value: any) => setNewEvent({ ...newEvent, type: value })}>
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="holiday">Holiday</SelectItem>
-                <SelectItem value="promotion">Promotion</SelectItem>
-                <SelectItem value="closure">Closure</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
         </div>
 
         <div className="space-y-2">
-          <Label>Description</Label>
+          <Label>Holiday Name</Label>
           <Input
             value={newEvent.description}
             onChange={(e) => setNewEvent({ ...newEvent, description: e.target.value })}
-            placeholder="e.g., Black Friday Sale"
+            placeholder="e.g., Christmas Day, New Year's Day"
           />
         </div>
 
@@ -114,7 +97,7 @@ export function StepEvents() {
 
       {data.events.length > 0 && (
         <div className="space-y-2">
-          <Label>Added Events</Label>
+          <Label>Added Holidays</Label>
           <div className="space-y-2">
             {data.events.map((event, index) => (
               <div key={index} className="flex items-center justify-between rounded-lg border bg-card p-4">
