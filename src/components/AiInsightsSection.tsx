@@ -210,10 +210,19 @@ export function AiInsightsSection({ hasForecastData, className = "" }: AiInsight
                   Potential Risks
                 </h4>
                 <div className="space-y-2">
-                  {insights.risks.map((risk: string, idx: number) => (
+                  {insights.risks.map((risk: any, idx: number) => (
                     <Alert key={idx} className="border-orange-200 bg-orange-50">
                       <AlertTriangle className="h-4 w-4 text-orange-500" />
-                      <AlertDescription className="text-sm">{risk}</AlertDescription>
+                      <AlertDescription className="space-y-1">
+                        {typeof risk === "string" ? (
+                          <p className="text-sm">{risk}</p>
+                        ) : (
+                          <>
+                            <p className="text-sm font-medium">{risk.title}</p>
+                            <p className="text-sm text-muted-foreground">{risk.detail}</p>
+                          </>
+                        )}
+                      </AlertDescription>
                     </Alert>
                   ))}
                 </div>
