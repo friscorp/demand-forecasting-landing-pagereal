@@ -62,7 +62,7 @@ export function AiInsightsSection({ hasForecastData, className = "" }: AiInsight
 
       try {
         const aiOutputsRef = collection(db, "users", user.uid, "ai_outputs")
-        const q = query(aiOutputsRef, where("task", "==", "weekly_insights"), orderBy("createdAt", "desc"), limit(1))
+        const q = query(aiOutputsRef, where("task", "==", "insights_weekly"), orderBy("createdAt", "desc"), limit(1))
         const snapshot = await getDocs(q)
 
         if (!snapshot.empty) {
