@@ -1,5 +1,6 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Settings } from "lucide-react"
+import { SalesDataUploadSection } from "@/components/SalesDataUploadSection"
 
 export default function BusinessSettings() {
   return (
@@ -9,6 +10,8 @@ export default function BusinessSettings() {
           <h1 className="text-3xl font-bold text-secondary">Business Settings</h1>
           <p className="text-muted-foreground">Configure your business preferences</p>
         </div>
+
+        <SalesDataUploadSection />
 
         <Card>
           <CardHeader>

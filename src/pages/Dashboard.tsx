@@ -15,6 +15,7 @@ import {
   Package,
   Megaphone,
   ExternalLink,
+  Upload,
 } from "lucide-react"
 import { useNavigate } from "react-router-dom"
 import { AuthStatus } from "@/components/auth-status"
@@ -234,6 +235,21 @@ export default function Dashboard() {
             <h1 className="text-3xl font-bold text-secondary">Demand Forecast Dashboard</h1>
             <p className="text-muted-foreground">AI-powered demand predictions for the next 7 days</p>
           </div>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => {
+              navigate("/settings")
+              // Scroll to sales data section after navigation
+              setTimeout(() => {
+                document.getElementById("sales-data")?.scrollIntoView({ behavior: "smooth" })
+              }, 100)
+            }}
+            className="gap-2 text-muted-foreground hover:text-foreground"
+          >
+            <Upload className="h-4 w-4" />
+            Update sales data
+          </Button>
           {isSynced && (hasForecastData || hasHourlyData) && (
             <div className="flex items-center gap-2 rounded-full bg-green-50 px-4 py-2 text-sm font-medium text-green-700">
               <CheckCircle2 className="h-4 w-4" />
