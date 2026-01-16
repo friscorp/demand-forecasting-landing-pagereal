@@ -19,6 +19,8 @@
     "setup:env": "cp .env.example .env 2>/dev/null || true && cp api/.env.example api/.env 2>/dev/null || true"
   },
   "dependencies": {
+    "@apollo/server": "latest",
+    "@as-integrations/express4": "latest",
     "@hookform/resolvers": "^3.10.0",
     "@radix-ui/react-accordion": "^1.2.11",
     "@radix-ui/react-alert-dialog": "^1.1.14",
@@ -54,6 +56,7 @@
     "cmdk": "^1.1.1",
     "date-fns": "^3.6.0",
     "embla-carousel-react": "^8.6.0",
+    "express": "5.2.1",
     "firebase": "^11.10.0",
     "firebase-admin": "^13.6.0",
     "firebase-functions": "^7.0.3",

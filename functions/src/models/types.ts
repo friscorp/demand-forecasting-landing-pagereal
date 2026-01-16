@@ -47,4 +47,3 @@ export type ColumnMapping = {
     insights_json: any | null;
     created_at: string; // ISO
   };
-  
