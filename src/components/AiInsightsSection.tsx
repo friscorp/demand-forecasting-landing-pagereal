@@ -4,14 +4,21 @@ import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { Sparkles, AlertTriangle, TrendingUp, Package, Megaphone, Users, Database } from "lucide-react"
+import {
+  Sparkles,
+  AlertTriangle,
+  TrendingUp,
+  Package,
+  Megaphone,
+  Users,
+  Database,
+  ChevronDown,
+  ChevronUp,
+} from "lucide-react"
 import { fetchWeeklyInsights } from "@/api/ai"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Progress } from "@/components/ui/progress"
 import { Skeleton } from "@/components/ui/skeleton"
-import { loadOrComputeHourMask } from "@/lib/hour-mask"
-import { auth } from "@/lib/firebase"
-import { getLatestHourlyRun } from "@/lib/runs"
 
 type AiInsightsSectionProps = {
   hasForecastData: boolean
@@ -25,69 +32,18 @@ const recommendationIcons = {
   data_quality: Database,
 }
 
-function applyHourMaskToForecast(forecast: any, hourMask: any) {
-  if (!forecast?.results) return forecast
-
-  const filtered: any = { ...forecast, results: {} }
-
-  for (const [item, itemData] of Object.entries(forecast.results)) {
-    if (itemData && typeof itemData === "object" && "forecast" in itemData) {
-      const forecastArray = (itemData as any).forecast
-
-      if (Array.isArray(forecastArray)) {
-        filtered.results[item] = {
-          ...(itemData as any),
-          forecast: forecastArray.filter((point: any) => {
-            const date = new Date(point.ds)
-            const dayOfWeek = date.getDay()
-            const hour = date.getHours()
-
-            const weekdayKeys = ["sun", "mon", "tue", "wed", "thu", "fri", "sat"]
-            const weekdayKey = weekdayKeys[dayOfWeek]
-
-            const allowedHours = hourMask[weekdayKey] || []
-            return allowedHours.includes(hour)
-          }),
-        }
-      }
-    }
-  }
-
-  return filtered
-}
-
 export function AiInsightsSection({ hasForecastData, className = "" }: AiInsightsSectionProps) {
   const [insights, setInsights] = useState<any>(null)
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [isDetailedExpanded, setIsDetailedExpanded] = useState(false)
 
   const handleGenerate = async () => {
     setIsLoading(true)
     setError(null)
 
     try {
-      const user = auth.currentUser
-      if (!user) {
-        throw new Error("User not authenticated")
-      }
-
-      // Fetch latest hourly run
-      const hourlyRun = await getLatestHourlyRun(user.uid)
-
-      let hourlyForecast = null
-      if (hourlyRun?.forecast) {
-        // Load or compute hour mask
-        const hourMask = await loadOrComputeHourMask(user.uid, undefined)
-
-        // Apply hour mask if available
-        if (hourMask) {
-          hourlyForecast = applyHourMaskToForecast(hourlyRun.forecast, hourMask)
-        } else {
-          hourlyForecast = hourlyRun.forecast
-        }
-      }
-
-      const result = await fetchWeeklyInsights(hourlyForecast)
+      const result = await fetchWeeklyInsights()
       setInsights(result)
     } catch (err: any) {
       setError(err.message || "Failed to generate insights")
@@ -170,7 +126,35 @@ export function AiInsightsSection({ hasForecastData, className = "" }: AiInsight
           <div className="space-y-6">
             <div className="space-y-3">
               <h3 className="text-xl font-bold text-primary">{insights.short}</h3>
-              <p className="text-sm text-muted-foreground leading-relaxed">{insights.detailed}</p>
+              <div className="relative">
+                <div
+                  className={`text-sm text-muted-foreground leading-relaxed ${!isDetailedExpanded ? "line-clamp-3" : ""}`}
+                >
+                  {insights.detailed.split(" - ").map((line: string, idx: number) => (
+                    <p key={idx} className={idx > 0 ? "mt-2" : ""}>
+                      {line.trim()}
+                    </p>
+                  ))}
+                </div>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setIsDetailedExpanded(!isDetailedExpanded)}
+                  className="mt-2 h-auto p-0 text-xs text-primary hover:bg-transparent"
+                >
+                  {isDetailedExpanded ? (
+                    <>
+                      <ChevronUp className="h-3 w-3 mr-1" />
+                      Show less
+                    </>
+                  ) : (
+                    <>
+                      <ChevronDown className="h-3 w-3 mr-1" />
+                      Show more
+                    </>
+                  )}
+                </Button>
+              </div>
             </div>
 
             {insights.metrics && (
@@ -215,55 +199,67 @@ export function AiInsightsSection({ hasForecastData, className = "" }: AiInsight
               </div>
             )}
 
-            {insights.recommendations && insights.recommendations.length > 0 && (
-              <div>
-                <h4 className="text-sm font-semibold mb-3 flex items-center gap-2">
-                  <TrendingUp className="h-4 w-4 text-primary" />
-                  Recommendations
-                </h4>
-                <div className="space-y-2">
-                  {insights.recommendations.map((rec: any, idx: number) => {
-                    const Icon = recommendationIcons[rec.type as keyof typeof recommendationIcons] || Package
-                    return (
-                      <Card key={idx} className="border-l-4 border-l-primary">
-                        <CardContent className="pt-4">
-                          <div className="flex items-start gap-3">
-                            <div className="mt-0.5 rounded-full bg-primary/10 p-2">
-                              <Icon className="h-4 w-4 text-primary" />
-                            </div>
-                            <div className="flex-1 space-y-1">
-                              <div className="flex items-center gap-2">
-                                <Badge variant="outline" className="text-xs">
-                                  {rec.type.replace("_", " ")}
-                                </Badge>
-                                {rec.item && (
-                                  <span className="text-xs font-medium text-muted-foreground">• {rec.item}</span>
-                                )}
-                              </div>
-                              <p className="text-sm font-medium">
-                                {typeof rec.action === "string"
-                                  ? rec.action
-                                  : rec.action?.title || rec.action?.detail || "Action"}
-                              </p>
-                              <p className="text-xs text-muted-foreground">
-                                {typeof rec.why === "string" ? (
-                                  <p className="text-sm">{rec.why}</p>
-                                ) : (
-                                  <>
-                                    <p className="text-sm font-medium">{rec.why.title}</p>
-                                    <p className="text-sm text-muted-foreground">{rec.why.detail}</p>
-                                  </>
-                                )}
-                              </p>
-                            </div>
-                          </div>
-                        </CardContent>
-                      </Card>
-                    )
-                  })}
+            <div className="flex gap-6">
+              {insights.confidence !== undefined && (
+                <div className="flex flex-col items-center gap-2 w-20">
+                  <div className="text-xs font-medium text-muted-foreground text-center">Confidence</div>
+                  <div className="flex-1 w-full flex flex-col items-center gap-2">
+                    <div className="text-2xl font-bold text-primary">{Math.round(insights.confidence * 100)}%</div>
+                    <div className="relative h-40 w-2 bg-secondary rounded-full overflow-hidden">
+                      <div
+                        className="absolute bottom-0 w-full bg-primary transition-all duration-300"
+                        style={{ height: `${insights.confidence * 100}%` }}
+                      />
+                    </div>
+                  </div>
                 </div>
-              </div>
-            )}
+              )}
+
+              {insights.recommendations && insights.recommendations.length > 0 && (
+                <div className="flex-1">
+                  <h4 className="text-sm font-semibold mb-3 flex items-center gap-2">
+                    <TrendingUp className="h-4 w-4 text-primary" />
+                    Recommendations
+                  </h4>
+                  <div className="space-y-2">
+                    {insights.recommendations.map((rec: any, idx: number) => {
+                      const Icon = recommendationIcons[rec.type as keyof typeof recommendationIcons] || Package
+                      return (
+                        <Card key={idx} className="border-l-4 border-l-primary">
+                          <CardContent className="pt-4">
+                            <div className="flex items-start gap-3">
+                              <div className="mt-0.5 rounded-full bg-primary/10 p-2">
+                                <Icon className="h-4 w-4 text-primary" />
+                              </div>
+                              <div className="flex-1 space-y-1">
+                                <div className="flex items-center gap-2">
+                                  <Badge variant="outline" className="text-xs">
+                                    {rec.type.replace("_", " ")}
+                                  </Badge>
+                                  {rec.item && (
+                                    <span className="text-xs font-medium text-muted-foreground">• {rec.item}</span>
+                                  )}
+                                </div>
+                                <p className="text-sm font-medium">
+                                  {typeof rec.action === "string"
+                                    ? rec.action
+                                    : rec.action?.title || rec.action?.detail || "Action"}
+                                </p>
+                                <p className="text-xs text-muted-foreground">
+                                  {typeof rec.why === "string"
+                                    ? rec.why
+                                    : rec.why?.detail || rec.why?.title || "Reason"}
+                                </p>
+                              </div>
+                            </div>
+                          </CardContent>
+                        </Card>
+                      )
+                    })}
+                  </div>
+                </div>
+              )}
+            </div>
 
             {insights.risks && insights.risks.length > 0 && (
               <div>
@@ -271,7 +267,7 @@ export function AiInsightsSection({ hasForecastData, className = "" }: AiInsight
                   <AlertTriangle className="h-4 w-4 text-orange-500" />
                   Potential Risks
                 </h4>
-                <div className="space-y-2">
+                <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
                   {insights.risks.map((risk: any, idx: number) => (
                     <Alert key={idx} className="border-orange-200 bg-orange-50">
                       <AlertTriangle className="h-4 w-4 text-orange-500" />
