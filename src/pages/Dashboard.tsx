@@ -16,7 +16,7 @@ import {
   Megaphone,
   ExternalLink,
   Upload,
-  Calendar,
+  Sparkles,
 } from "lucide-react"
 import { useNavigate } from "react-router-dom"
 import { AuthStatus } from "@/components/auth-status"
@@ -60,6 +60,7 @@ export default function Dashboard() {
   const [promotions, setPromotions] = useState<Promotion[]>([])
   const [adjustedForecast, setAdjustedForecast] = useState<any>(null)
   const [adjustedHourlyForecast, setAdjustedHourlyForecast] = useState<any>(null)
+  const [isAskAiOpen, setIsAskAiOpen] = useState(false)
 
   useEffect(() => {
     const loadData = async () => {
@@ -263,7 +264,9 @@ export default function Dashboard() {
         <AuthStatus />
       </div>
 
-      <div className="mx-auto max-w-6xl space-y-6">
+      <div
+        className={`mx-auto transition-all duration-300 space-y-6 ${isAskAiOpen ? "max-w-full pr-96" : "max-w-6xl"}`}
+      >
         {showSetupBanner && !bannerDismissed && (
           <div className="mb-6 rounded-lg border-2 border-primary/20 bg-primary/5 p-4">
             <div className="flex items-start gap-3">
@@ -312,6 +315,26 @@ export default function Dashboard() {
             <h1 className="text-3xl font-bold text-secondary">Demand Forecast Dashboard</h1>
             <p className="text-muted-foreground">AI-powered demand predictions for the next 7 days</p>
           </div>
+          {isSynced && (hasForecastData || hasHourlyData) && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                navigate("/business-settings")
+                setTimeout(() => {
+                  document.getElementById("holidays-section")?.scrollIntoView({ behavior: "smooth" })
+                }, 100)
+              }}
+              className="relative gap-2 overflow-hidden border-2 border-transparent bg-gradient-to-r from-[#3EB489] via-blue-500 to-[#3EB489] p-[2px] hover:shadow-lg transition-shadow"
+            >
+              <span className="flex items-center gap-2 rounded-sm bg-background px-3 py-1.5">
+                <div className="flex h-5 w-5 items-center justify-center rounded-full bg-gradient-to-br from-[#3EB489] to-blue-500">
+                  <Sparkles className="h-3 w-3 text-white" />
+                </div>
+                <span className="text-sm font-medium">Suggested Holidays</span>
+              </span>
+            </Button>
+          )}
           <Button
             variant="ghost"
             size="sm"
@@ -333,6 +356,18 @@ export default function Dashboard() {
             </div>
           )}
         </div>
+
+        {(hasForecastData || hasHourlyData) && (
+          <div className="flex justify-center">
+            <Button
+              onClick={() => setIsAskAiOpen(!isAskAiOpen)}
+              className="rounded-full bg-primary px-6 py-6 shadow-lg hover:shadow-xl transition-all hover:scale-105"
+            >
+              <Sparkles className="h-5 w-5 mr-2" />
+              <span className="font-medium">Ask AI</span>
+            </Button>
+          </div>
+        )}
 
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
           <Card>
@@ -379,25 +414,6 @@ export default function Dashboard() {
             </CardContent>
           </Card>
         </div>
-
-        {(hasForecastData || hasHourlyData) && <AskAiInput />}
-
-        {(hasForecastData || hasHourlyData) && (
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => {
-              navigate("/business-settings")
-              setTimeout(() => {
-                document.getElementById("holidays-section")?.scrollIntoView({ behavior: "smooth" })
-              }, 100)
-            }}
-            className="mx-auto flex gap-2 text-xs text-muted-foreground hover:text-foreground"
-          >
-            <Calendar className="h-3 w-3" />
-            Suggested holidays
-          </Button>
-        )}
 
         <Card>
           <CardHeader>
@@ -544,6 +560,21 @@ export default function Dashboard() {
           <HistoryCompare items={hourlyItems} selectedItem={currentHourlyItem} />
         )}
       </div>
+
+      {isAskAiOpen && (
+        <div className="fixed right-0 top-0 h-screen w-[40%] bg-background border-l border-border shadow-2xl overflow-y-auto transition-transform duration-300 z-50 p-6">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-xl font-bold flex items-center gap-2">
+              <Sparkles className="h-5 w-5 text-primary" />
+              Ask AI
+            </h2>
+            <Button variant="ghost" size="icon" onClick={() => setIsAskAiOpen(false)}>
+              <X className="h-5 w-5" />
+            </Button>
+          </div>
+          <AskAiInput itemContext={currentItem} className="h-full" />
+        </div>
+      )}
     </div>
   )
 }
