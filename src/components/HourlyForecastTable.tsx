@@ -27,6 +27,8 @@ interface HourlyForecastTableProps {
     closedDates?: string[]
   }
   hourMask?: HourMask | null
+  maskEnabled?: boolean
+  onMaskEnabledChange?: (enabled: boolean) => void
 }
 
 export function HourlyForecastTable({
@@ -34,23 +36,29 @@ export function HourlyForecastTable({
   hourlyForecastForItem,
   businessProfile,
   hourMask,
+  maskEnabled = true,
+  onMaskEnabledChange,
 }: HourlyForecastTableProps) {
+  const [useMaskFilter, setUseMaskFilter] = useState(maskEnabled)
+  const [currentDayIndex, setCurrentDayIndex] = useState(0)
+
   const timezone = businessProfile?.timezone || "America/Los_Angeles"
   const hours = businessProfile?.hours
   const closedDates = businessProfile?.closedDates
 
-  const [useMaskFilter, setUseMaskFilter] = useState(true)
+  const hasData = hourlyForecastForItem && hourlyForecastForItem.length > 0
 
-  const firstDate = hourlyForecastForItem.length > 0 ? hourlyForecastForItem[0].ds : new Date().toISOString()
+  const firstDate = hasData ? hourlyForecastForItem[0].ds : new Date().toISOString()
   const firstParts = parseISOToZonedParts(firstDate, timezone)
   const firstDateKey = getDateKeyYYYYMMDD(firstParts)
 
   const availableDays = useMemo(() => getNext7Days(firstDateKey), [firstDateKey])
-  const [currentDayIndex, setCurrentDayIndex] = useState(0)
   const currentDateKey = availableDays[currentDayIndex]
 
   // Filter forecast data for current day
   const filteredRows = useMemo(() => {
+    if (!hasData) return []
+
     const dayRows = hourlyForecastForItem.filter((point) => {
       const parts = parseISOToZonedParts(point.ds, timezone)
       const dateKey = getDateKeyYYYYMMDD(parts)
@@ -80,7 +88,6 @@ export function HourlyForecastTable({
       return []
     }
 
-    // Filter by business hours
     let filtered = dayRows
     if (!useMaskFilter) {
       // Only apply business hours filter when mask is disabled
@@ -109,11 +116,7 @@ export function HourlyForecastTable({
     console.log("[v0] HourlyTable: final filtered rows:", filtered.length)
 
     return filtered
-  }, [hourlyForecastForItem, currentDateKey, timezone, hours, closedDates, useMaskFilter, hourMask])
-
-  const dayLabel = formatDayLabel(currentDateKey, timezone)
-  const hasPrev = currentDayIndex > 0
-  const hasNext = currentDayIndex < availableDays.length - 1
+  }, [hourlyForecastForItem, currentDateKey, timezone, hours, closedDates, useMaskFilter, hourMask, hasData])
 
   const currentWeekdayKey = useMemo(() => {
     const parts = parseISOToZonedParts(currentDateKey + "T12:00:00Z", timezone)
@@ -123,11 +126,30 @@ export function HourlyForecastTable({
   const maskEmptyForDay =
     useMaskFilter && hourMask && (hourMask[currentWeekdayKey]?.length === 0 || !hourMask[currentWeekdayKey])
 
+  const dayLabel = formatDayLabel(currentDateKey, timezone)
+  const hasPrev = currentDayIndex > 0
+  const hasNext = currentDayIndex < availableDays.length - 1
+
+  if (!hasData) {
+    return (
+      <div className="flex flex-col items-center justify-center py-12 text-center">
+        <p className="text-muted-foreground">No hourly forecast data available</p>
+      </div>
+    )
+  }
+
   return (
     <div className="space-y-4">
       {hourMask && (
         <div className="flex items-center space-x-2 rounded-lg border p-3 bg-muted/50">
-          <Switch id="mask-toggle" checked={useMaskFilter} onCheckedChange={setUseMaskFilter} />
+          <Switch
+            id="mask-toggle"
+            checked={useMaskFilter}
+            onCheckedChange={(checked) => {
+              setUseMaskFilter(checked)
+              onMaskEnabledChange?.(checked)
+            }}
+          />
           <Label htmlFor="mask-toggle" className="text-sm cursor-pointer">
             Show only hours present in uploaded data
           </Label>

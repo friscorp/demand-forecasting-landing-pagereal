@@ -403,8 +403,8 @@ export default function Dashboard() {
               </div>
             ) : hasHourlyData && hourlyForecastData.length > 0 ? (
               <HourlyForecastTable
-                forecast={hourlyForecast}
                 selectedItem={currentHourlyItem}
+                hourlyForecastForItem={hourlyForecastData}
                 businessProfile={businessProfile}
                 hourMask={hourMask}
                 maskEnabled={maskEnabled}
