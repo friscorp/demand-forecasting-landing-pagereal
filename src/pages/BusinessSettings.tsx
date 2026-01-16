@@ -1,6 +1,7 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Settings } from "lucide-react"
 import { SalesDataUploadSection } from "@/components/SalesDataUploadSection"
+import { SuggestedHolidaysPanel } from "@/components/SuggestedHolidaysPanel"
 
 export default function BusinessSettings() {
   return (
@@ -12,6 +13,8 @@ export default function BusinessSettings() {
         </div>
 
         <SalesDataUploadSection />
+
+        <SuggestedHolidaysPanel />
 
         <Card>
           <CardHeader>

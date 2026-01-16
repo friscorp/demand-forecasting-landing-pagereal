@@ -16,6 +16,7 @@ import {
   Megaphone,
   ExternalLink,
   Upload,
+  Calendar,
 } from "lucide-react"
 import { useNavigate } from "react-router-dom"
 import { AuthStatus } from "@/components/auth-status"
@@ -308,6 +309,23 @@ export default function Dashboard() {
         </div>
 
         {(hasForecastData || hasHourlyData) && <AskAiInput />}
+
+        {(hasForecastData || hasHourlyData) && (
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => {
+              navigate("/business-settings")
+              setTimeout(() => {
+                document.getElementById("holidays-section")?.scrollIntoView({ behavior: "smooth" })
+              }, 100)
+            }}
+            className="mx-auto flex gap-2 text-xs text-muted-foreground hover:text-foreground"
+          >
+            <Calendar className="h-3 w-3" />
+            Suggested holidays
+          </Button>
+        )}
 
         <Card>
           <CardHeader>
